@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="imgui-sfml">
+      <UniqueIdentifier>{9FB636AC-8B6E-78F9-F475-5155E04C13EA}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\core\Action.h" />
+    <ClInclude Include="src\core\Animation.h" />
+    <ClInclude Include="src\core\Assets.h" />
+    <ClInclude Include="src\helpers\Color.h" />
+    <ClInclude Include="src\core\Components.h" />
+    <ClInclude Include="src\core\Entity.h" />
+    <ClInclude Include="src\core\EntityManager.h" />
+    <ClInclude Include="src\core\GameEngine.h" />
+    <ClInclude Include="src\core\Physics.h" />
+    <ClInclude Include="src\core\Scene.h" />
+    <ClInclude Include="src\Scene_Play.h" />
+    <ClInclude Include="src\helpers\Vec2.h" />
+    <ClInclude Include="src\SceneKinematicMovementAlgorithms.h" />
+    <ClInclude Include="src\MovementAlgorithms.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\core\Action.cpp" />
+    <ClCompile Include="src\core\Animation.cpp" />
+    <ClCompile Include="src\core\Assets.cpp" />
+    <ClCompile Include="src\helpers\Color.cpp" />
+    <ClCompile Include="src\core\Entity.cpp" />
+    <ClCompile Include="src\core\EntityManager.cpp" />
+    <ClCompile Include="src\core\GameEngine.cpp" />
+    <ClCompile Include="src\core\Main.cpp" />
+    <ClCompile Include="src\core\Physics.cpp" />
+    <ClCompile Include="src\core\Scene.cpp" />
+    <ClCompile Include="src\Scene_Play.cpp" />
+    <ClCompile Include="src\helpers\Vec2.cpp" />
+    <ClCompile Include="src\imgui-sfml\imgui-SFML.cpp">
+      <Filter>imgui-sfml</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui-sfml\imgui.cpp">
+      <Filter>imgui-sfml</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui-sfml\imgui_demo.cpp">
+      <Filter>imgui-sfml</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui-sfml\imgui_draw.cpp">
+      <Filter>imgui-sfml</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui-sfml\imgui_tables.cpp">
+      <Filter>imgui-sfml</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui-sfml\imgui_widgets.cpp">
+      <Filter>imgui-sfml</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SceneKinematicMovementAlgorithms.cpp" />
+    <ClCompile Include="src\MovementAlgorithms.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="resources\kinematic_seek_leveldata.txt" />
+  </ItemGroup>
+</Project>
