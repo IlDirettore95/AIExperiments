@@ -137,7 +137,7 @@ void Scene_Play::SpawnExplosion(const Vec2& spawnPosition)
 void Scene_Play::SpawnBullet()
 {
 	std::shared_ptr<Entity> bullet = m_entityManager.AddEntity("Bullet");
-	bullet->AddComponent<CTransform>(m_player->GetComponent<CTransform>().pos, m_player->GetComponent<CTransform>().scale.x > 0 ? Vec2(12, 0) : Vec2(-12, 0), Vec2(0.5f, 0.5f), 0);
+	bullet->AddComponent<CTransform>(m_player->GetComponent<CTransform>().Static.Position, m_player->GetComponent<CTransform>().scale.x > 0 ? Vec2(12, 0) : Vec2(-12, 0), Vec2(0.5f, 0.5f), 0);
 	CAnimation& animationComponent = bullet->AddComponent<CAnimation>(m_game->assets().GetAnimation("Wall"), true);
 	bullet->AddComponent<CBoundingBox>(Vec2(animationComponent.animation.getSize().x, animationComponent.animation.getSize().y));
 	bullet->AddComponent<CLifeSpan>(60, m_currentFrame);
@@ -207,8 +207,8 @@ void Scene_Play::SMovement()
 			// if the player is moving faster than max speed in any direction set its speed in that direction to the max speed
 		}
 
-		e->GetComponent<CTransform>().prevPos = e->GetComponent<CTransform>().pos;
-		e->GetComponent<CTransform>().pos += e->GetComponent<CTransform>().velocity;
+		e->GetComponent<CTransform>().prevPos = e->GetComponent<CTransform>().Static.Position;
+		e->GetComponent<CTransform>().Static.Position += e->GetComponent<CTransform>().velocity;
 	}
 }
 
@@ -223,7 +223,7 @@ void Scene_Play::SRenderer()
 	else { m_game->window().clear(sf::Color(50, 50, 150)); }
 
 	// set the viewport of the window to be centered on the player if it's far enough right
-	auto& pPos = m_player->GetComponent<CTransform>().pos;
+	auto& pPos = m_player->GetComponent<CTransform>().Static.Position;
 	float windowCenterX = std::max(m_game->window().getSize().x / 2.0f, pPos.x);
 	sf::View view = m_game->window().getView();
 	view.setCenter(windowCenterX, m_game->window().getSize().y - view.getCenter().y);
@@ -239,8 +239,8 @@ void Scene_Play::SRenderer()
 			if (e->HasComponent<CAnimation>())
 			{
 				auto& animation = e->GetComponent<CAnimation>().animation;
-				animation.getSprite().setRotation(transform.angle);
-				animation.getSprite().setPosition(transform.pos.x, transform.pos.y);
+				animation.getSprite().setRotation(transform.Static.Orientation);
+				animation.getSprite().setPosition(transform.Static.Position.x, transform.Static.Position.y);
 				animation.getSprite().setScale(transform.scale.x, transform.scale.y);
 				m_game->window().draw(animation.getSprite());
 			}
@@ -259,7 +259,7 @@ void Scene_Play::SRenderer()
 				sf::RectangleShape rect;
 				rect.setSize(sf::Vector2f(box.size.x - 1, box.size.y - 1));
 				rect.setOrigin(sf::Vector2f(box.halfSize.x, box.halfSize.y));
-				rect.setPosition(transform.pos.x, transform.pos.y);
+				rect.setPosition(transform.Static.Position.x, transform.Static.Position.y);
 				rect.setFillColor(sf::Color(0,0,0,0));
 				rect.setOutlineColor(sf::Color(255, 255, 255, 255));
 				rect.setOutlineThickness(1);
@@ -324,14 +324,14 @@ void Scene_Play::SCollision()
 		// World bounding
 		auto& playerTransform = player->GetComponent<CTransform>();
 		auto& playerBoundingBox = player->GetComponent<CBoundingBox>();
-		if (playerTransform.pos.x - playerBoundingBox.halfSize.x < 0)
+		if (playerTransform.Static.Position.x - playerBoundingBox.halfSize.x < 0)
 		{
-			playerTransform.pos.x = playerBoundingBox.halfSize.x;
+			playerTransform.Static.Position.x = playerBoundingBox.halfSize.x;
 		}
 
-		if (playerTransform.pos.y + playerBoundingBox.halfSize.y > m_game->window().getSize().y)
+		if (playerTransform.Static.Position.y + playerBoundingBox.halfSize.y > m_game->window().getSize().y)
 		{
-			playerTransform.pos = GridToMidPixel(m_playerConfig.X, m_playerConfig.Y, m_player);
+			playerTransform.Static.Position = GridToMidPixel(m_playerConfig.X, m_playerConfig.Y, m_player);
 			
 			playerTransform.velocity = Vec2();
 		}
@@ -351,7 +351,7 @@ void Scene_Play::SCollision()
 				if (playerTransform.velocity.y > 0)
 				{
 					player->GetComponent<CState>().state = "grounded";
-					SpawnExplosion(tile->GetComponent<CTransform>().pos);
+					SpawnExplosion(tile->GetComponent<CTransform>().Static.Position);
 				}
 				playerTransform.velocity.y = 0;
 			}
@@ -362,7 +362,7 @@ void Scene_Play::SCollision()
 				if (playerTransform.velocity.y > 0)
 				{
 					player->GetComponent<CState>().state = "grounded";
-					SpawnExplosion(tile->GetComponent<CTransform>().pos);
+					SpawnExplosion(tile->GetComponent<CTransform>().Static.Position);
 				}
 				playerTransform.velocity.y = 0;
 			}
@@ -373,7 +373,7 @@ void Scene_Play::SCollision()
 				playerTransform.velocity.x = 0;
 			}
 
-			playerTransform.pos +=  direction * magnitude;
+			playerTransform.Static.Position +=  direction * magnitude;
 		}
 	}
 }

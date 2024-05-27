@@ -18,8 +18,9 @@
     <ClInclude Include="src\core\Scene.h" />
     <ClInclude Include="src\Scene_Play.h" />
     <ClInclude Include="src\helpers\Vec2.h" />
-    <ClInclude Include="src\SceneKinematicMovementAlgorithms.h" />
+    <ClInclude Include="src\SceneKinematicSeek.h" />
     <ClInclude Include="src\MovementAlgorithms.h" />
+    <ClInclude Include="src\SceneMainMenu.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Action.cpp" />
@@ -52,10 +53,12 @@
     <ClCompile Include="src\imgui-sfml\imgui_widgets.cpp">
       <Filter>imgui-sfml</Filter>
     </ClCompile>
-    <ClCompile Include="src\SceneKinematicMovementAlgorithms.cpp" />
+    <ClCompile Include="src\SceneKinematicSeek.cpp" />
     <ClCompile Include="src\MovementAlgorithms.cpp" />
+    <ClCompile Include="src\SceneMainMenu.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="resources\kinematic_seek_leveldata.txt" />
+    <Text Include="resources\kinematic_seek_scenedata.txt" />
+    <Text Include="resources\main_menu_scenedata.txt" />
   </ItemGroup>
 </Project>

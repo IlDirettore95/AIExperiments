@@ -1,19 +1,21 @@
-#include "SceneKinematicMovementAlgorithms.h"
+#include "SceneKinematicSeek.h"
 #include "core/GameEngine.h"
 #include <fstream>
 #include <string>
 #include "core/Components.h"
 #include "MovementAlgorithms.h"
+#include <filesystem>
+#include "SceneMainMenu.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-SceneKinematicMovementAlgorithms::SceneKinematicMovementAlgorithms(GameEngine* gameEngine, const std::string& levelPath)
+SceneKinematicSeek::SceneKinematicSeek(GameEngine* gameEngine, const std::string& levelPath)
 	: Scene(gameEngine)
 {
 	// Register Action
 	{
-
+		RegisterAction(sf::Keyboard::Escape, "BACK_TO_MAIN_MENU");
 	}
 
 	// Load Level
@@ -23,7 +25,7 @@ SceneKinematicMovementAlgorithms::SceneKinematicMovementAlgorithms(GameEngine* g
 
 		// Spawn a Target Entity
 		auto target = m_entityManager.AddEntity("TargetEntity");
-		CStaticData& staticData = target->AddComponent<CStaticData>();
+		target->AddComponent<CTransform>();
 
 		std::fstream fin(levelPath);
 		std::string label;
@@ -42,9 +44,7 @@ SceneKinematicMovementAlgorithms::SceneKinematicMovementAlgorithms(GameEngine* g
 
 				auto aiCharacter = m_entityManager.AddEntity("AICharacter");
 				aiCharacter->AddComponent<CAnimation>(m_game->assets().GetAnimation(animationName), true);
-				//aiCharacter->AddComponent<CTransform>(GridToMidPixel(posX, posY, aiCharacter));
-				CStaticData& staticData = aiCharacter->AddComponent<CStaticData>();
-				staticData.Position = GridToMidPixel(posX, posY, aiCharacter);
+				aiCharacter->AddComponent<CTransform>(GridToMidPixel(posX, posY, aiCharacter));
 				CTargetToSeek& targetToSeek = aiCharacter->AddComponent<CTargetToSeek>();
 				targetToSeek.EntityID = target->id();
 				targetToSeek.MaxSpeed = 2.0f;
@@ -54,7 +54,7 @@ SceneKinematicMovementAlgorithms::SceneKinematicMovementAlgorithms(GameEngine* g
 	}
 }
 
-void SceneKinematicMovementAlgorithms::Update()
+void SceneKinematicSeek::Update()
 {
 	m_entityManager.Update();
 
@@ -64,11 +64,15 @@ void SceneKinematicMovementAlgorithms::Update()
 	m_currentFrame++;
 }
 
-void SceneKinematicMovementAlgorithms::SDoAction(const Action& action)
+void SceneKinematicSeek::SDoAction(const Action& action)
 {
 	if (action.Type() == "START")
 	{
-
+		if (action.Name() == "BACK_TO_MAIN_MENU")
+		{
+			std::string scenePath = (std::filesystem::current_path() / "resources" / "main_menu_scenedata.txt").string();
+			m_game->changeScene("MAIN_MENU", std::make_shared<SceneMainMenu>(m_game, scenePath));
+		}
 	}
 	else if (action.Type() == "END")
 	{
@@ -76,7 +80,7 @@ void SceneKinematicMovementAlgorithms::SDoAction(const Action& action)
 	}
 }
 
-void SceneKinematicMovementAlgorithms::SRenderer()
+void SceneKinematicSeek::SRenderer()
 {
 	// color the background darker so you know that the game is paused
 	if (!m_paused) { m_game->window().clear(sf::Color(20, 20, 60)); }
@@ -91,17 +95,14 @@ void SceneKinematicMovementAlgorithms::SRenderer()
 	// draw textures
 	for (auto e : m_entityManager.GetEntities())
 	{
-		//auto& transform = e->GetComponent<CTransform>();
-		auto& staticData = e->GetComponent<CStaticData>();
+		auto& transform = e->GetComponent<CTransform>();
 
 		if (e->HasComponent<CAnimation>())
 		{
 			auto& animation = e->GetComponent<CAnimation>().animation;
-			//animation.getSprite().setRotation(transform.angle);
-			//animation.getSprite().setPosition(transform.pos.x, transform.pos.y);
-			//animation.getSprite().setScale(transform.scale.x, transform.scale.y);
-			animation.getSprite().setPosition(staticData.Position.x, staticData.Position.y);
-			animation.getSprite().setRotation(staticData.Orientation * 180.0f / M_PI);
+			animation.getSprite().setRotation(transform.Static.Orientation * 180.0f / M_PI);
+			animation.getSprite().setPosition(transform.Static.Position.x, transform.Static.Position.y);
+			animation.getSprite().setScale(transform.scale.x, transform.scale.y);
 			m_game->window().draw(animation.getSprite());
 		}
 	}
@@ -110,24 +111,24 @@ void SceneKinematicMovementAlgorithms::SRenderer()
 	m_game->window().display();
 }
 
-void SceneKinematicMovementAlgorithms::SSeek()
+void SceneKinematicSeek::SSeek()
 {
 	// Move Target
 	for (auto e : m_entityManager.GetEntities("TargetEntity"))
 	{
-		if (!e->HasComponent<CStaticData>()) continue;
+		if (!e->HasComponent<CTransform>()) continue;
 
-		CStaticData& staticData = e->GetComponent<CStaticData>();
-		staticData.Position = Vec2(sf::Mouse::getPosition(m_game->window()).x, sf::Mouse::getPosition(m_game->window()).y);
+		CTransform& transform = e->GetComponent<CTransform>();
+		transform.Static.Position = Vec2(sf::Mouse::getPosition(m_game->window()).x, sf::Mouse::getPosition(m_game->window()).y);
 	}
 
 	// Seek
-	for (auto e : m_entityManager.GetEntities("AICharacter"))
+	for (auto e : m_entityManager.GetEntities())
 	{
-		if (!e->HasComponent<CStaticData>()) continue;
+		if (!e->HasComponent<CTransform>()) continue;
 		if (!e->HasComponent<CTargetToSeek>()) continue;
 
-		CStaticData& staticData = e->GetComponent<CStaticData>();
+		CTransform& transform = e->GetComponent<CTransform>();
 		const CTargetToSeek& targetToSeek = e->GetComponent<CTargetToSeek>();
 
 		for (auto otherE : m_entityManager.GetEntities())
@@ -135,14 +136,14 @@ void SceneKinematicMovementAlgorithms::SSeek()
 			if (e == otherE) continue;
 			if (otherE->id() == targetToSeek.EntityID)
 			{
-				if (otherE->HasComponent<CStaticData>())
+				if (otherE->HasComponent<CTransform>())
 				{
-					const CStaticData& targetStaticData = otherE->GetComponent<CStaticData>();
-					KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Seek(staticData, targetStaticData, targetToSeek.MaxSpeed);
-					KinematicMovementsAlgorithms::Update(staticData, steering);
+					const CTransform& targetTransform = otherE->GetComponent<CTransform>();
+					KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Seek(transform.Static, targetTransform.Static, targetToSeek.MaxSpeed);
+					KinematicMovementsAlgorithms::Update(transform.Static, steering);
 
 					//std::cout << steering.Velocity.Magnitude() << std::endl;
-					std::cout << staticData.Orientation << std::endl;
+					//std::cout << transform.Static.Orientation << std::endl;
 				}
 				break;
 			}
@@ -150,11 +151,11 @@ void SceneKinematicMovementAlgorithms::SSeek()
 	}
 }
 
-void SceneKinematicMovementAlgorithms::OnEnd()
+void SceneKinematicSeek::OnEnd()
 {
 }
 
-Vec2 SceneKinematicMovementAlgorithms::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)
+Vec2 SceneKinematicSeek::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)
 {
 	const Vec2& entitySize = entity->GetComponent<CAnimation>().animation.getSize();
 	Vec2 entityPosition = Vec2(gridX * m_gridSize.x, gridY * m_gridSize.y) + entitySize / 2;

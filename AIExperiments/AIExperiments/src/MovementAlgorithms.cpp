@@ -2,7 +2,7 @@
 
 namespace KinematicMovementsAlgorithms
 {
-	void Update(CStaticData& data, const SteeringOutput& steering)
+	void Update(StaticData& data, const SteeringOutput& steering)
 	{
 		data.Position += steering.Velocity;
 		data.Orientation += steering.Rotation;
@@ -20,7 +20,7 @@ namespace KinematicMovementsAlgorithms
 		}
 	}
 
-	SteeringOutput Seek(CStaticData& characterData, const CStaticData& targetData, float maxSpeed)
+	SteeringOutput Seek(StaticData& characterData, const StaticData& targetData, float maxSpeed)
 	{
 		SteeringOutput result;
 

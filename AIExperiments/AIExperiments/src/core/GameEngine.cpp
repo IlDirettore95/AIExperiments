@@ -1,5 +1,5 @@
 #include "GameEngine.h"
-#include "../SceneKinematicMovementAlgorithms.h"
+#include "../SceneMainMenu.h"
 #include <filesystem>
 
 void GameEngine::init()
@@ -8,7 +8,8 @@ void GameEngine::init()
 	m_window.create(sf::VideoMode(1280, 768), "AIExperiments!");
 	m_window.setFramerateLimit(60);
 
-	changeScene("KINEMATICSEEK", std::make_shared<SceneKinematicMovementAlgorithms>(this, (std::filesystem::current_path() / "resources" / "kinematic_seek_leveldata.txt").string()));
+	std::string firstScenePath = (std::filesystem::current_path() / "resources" / "main_menu_scenedata.txt").string();
+	changeScene("MAIN_MENU", std::make_shared<SceneMainMenu>(this, firstScenePath));
 }
 
 void GameEngine::update()

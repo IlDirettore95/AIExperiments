@@ -12,11 +12,11 @@ namespace KinematicMovementsAlgorithms
 	};
 
 
-	void Update(CStaticData& data, const SteeringOutput& steering);
+	void Update(StaticData& data, const SteeringOutput& steering);
 
 	float NewOrientation(const float currentOrientation, const Vec2& velocity);
 
-	SteeringOutput Seek(CStaticData& characterData, const CStaticData& targetData, float maxSpeed);	
+	SteeringOutput Seek(StaticData& characterData, const StaticData& targetData, float maxSpeed);	
 }
 
 namespace SteeringMovementAlgorithms

@@ -1,0 +1,2 @@
+Text MainMenu			640		100
+Text 1KinematicSeek		140		200

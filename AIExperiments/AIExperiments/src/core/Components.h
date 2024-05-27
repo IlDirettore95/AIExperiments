@@ -10,20 +10,31 @@ public:
 	bool has = false;
 };
 
+struct StaticData
+{
+	Vec2 Position = { 0.0f, 0.0f };
+	float Orientation = 0.0f;
+};
+
 class CTransform : public Component
 {
 public:
-	Vec2 pos = { 0.0, 0.0 };
-	Vec2 prevPos = { 0.0, 0.0 };
-	Vec2 scale = { 1.0, 1.0 };
+	StaticData Static;
 	Vec2 velocity = { 0.0, 0.0 };
-	float angle = 0.0f;
+	Vec2 scale = { 1.0, 1.0 };
+	Vec2 prevPos = { 0.0, 0.0 };
 
 	CTransform() {}
 	CTransform(const Vec2& p)
-		: pos(p) {}
+	{
+		Static.Position = p;
+	}
 	CTransform(const Vec2& p, const Vec2& sp, const Vec2& sc, float a)
-		: pos(p), prevPos(p), velocity(sp), scale(sc), angle(a) {}
+		: prevPos(p), velocity(sp), scale(sc) 
+	{
+		Static.Position = p;
+		Static.Orientation = a;
+	}
 };
 
 class CLifeSpan : public Component
@@ -91,10 +102,18 @@ public:
 		: state(s) {}
 };
 
-struct CStaticData : public Component
+class CText : public Component
 {
-	Vec2 Position = Vec2(0.0f, 0.0f);
-	float Orientation = 0.0f;
+public:
+	sf::Text text;
+
+	CText() {}
+	CText(const std::string& name, const sf::Font& font, const uint32_t fontSize, const sf::Color& color)
+		: text(name, font, fontSize)
+	{
+		text.setFillColor(color);
+		text.setOrigin(text.getLocalBounds().width / 2 + text.getLocalBounds().left, text.getLocalBounds().height / 2 + text.getLocalBounds().top);
+	}
 };
 
 struct CTargetToSeek : public Component

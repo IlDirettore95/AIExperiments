@@ -3,10 +3,10 @@
 #include "core/Scene.h"
 #include <math.h>
 
-class SceneKinematicMovementAlgorithms : public Scene
+class SceneKinematicSeek : public Scene
 {
 public:
-	SceneKinematicMovementAlgorithms(GameEngine* gameEngine, const std::string& levelPath);
+	SceneKinematicSeek(GameEngine* gameEngine, const std::string& levelPath);
 	void Update();
 	void SDoAction(const Action& action);
 	void SRenderer();
