@@ -106,7 +106,7 @@
     <ClInclude Include="src\core\Physics.h" />
     <ClInclude Include="src\core\Scene.h" />
     <ClInclude Include="src\MovementAlgorithms.h" />
-    <ClInclude Include="src\SceneKinematicSeek.h" />
+    <ClInclude Include="src\SceneKinematic.h" />
     <ClInclude Include="src\SceneMainMenu.h" />
     <ClInclude Include="src\Scene_Play.h" />
     <ClInclude Include="src\helpers\Vec2.h" />
@@ -123,7 +123,7 @@
     <ClCompile Include="src\core\Physics.cpp" />
     <ClCompile Include="src\core\Scene.cpp" />
     <ClCompile Include="src\MovementAlgorithms.cpp" />
-    <ClCompile Include="src\SceneKinematicSeek.cpp" />
+    <ClCompile Include="src\SceneKinematic.cpp" />
     <ClCompile Include="src\SceneMainMenu.cpp" />
     <ClCompile Include="src\Scene_Play.cpp" />
     <ClCompile Include="src\helpers\Vec2.cpp" />
@@ -135,7 +135,7 @@
     <ClCompile Include="src\imgui-sfml\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="resources\kinematic_seek_scenedata.txt" />
+    <Text Include="resources\kinematic_scenedata.txt" />
     <Text Include="resources\main_menu_scenedata.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

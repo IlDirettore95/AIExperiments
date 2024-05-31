@@ -12,8 +12,9 @@ typedef std::tuple<
 	CAnimation,
 	CGravity,
 	CState,
-	CTargetToSeek,
-	CText
+	CTarget,
+	CText,
+	CFollowMouse
 > ComponentTuple;
 
 class Entity

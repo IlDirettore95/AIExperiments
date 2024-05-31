@@ -1,0 +1,3 @@
+MovingTarget	
+AICharacter		AnimAICharacter		10			10
+Text			AlgorithmType		1100		60

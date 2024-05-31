@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include "core/Components.h"
-#include "SceneKinematicSeek.h"
+#include "SceneKinematic.h"
 #include <memory>
 #include <filesystem>
 
@@ -63,8 +63,8 @@ void SceneMainMenu::SDoAction(const Action& action)
 	{
 		if (action.Name() == "KINEMATIC_SEEK") 
 		{ 
-			std::string scenePath = (std::filesystem::current_path() / "resources" / "kinematic_seek_scenedata.txt").string();
-			m_game->changeScene("KINEMATIC_SEEK", std::make_shared<SceneKinematicSeek>(m_game, scenePath));
+			std::string scenePath = (std::filesystem::current_path() / "resources" / "kinematic_scenedata.txt").string();
+			m_game->changeScene("KINEMATIC_SEEK", std::make_shared<SceneKinematic>(m_game, scenePath));
 		}
 
 	}

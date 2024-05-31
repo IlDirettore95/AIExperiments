@@ -1,2 +1,2 @@
-Text MainMenu			640		100
-Text 1KinematicSeek		140		200
+Text MainMenu					640		100
+Text 1KinematicAlgorithms		160		200

@@ -116,8 +116,14 @@ public:
 	}
 };
 
-struct CTargetToSeek : public Component
+class CTarget : public Component
 {
+public:
 	size_t EntityID;
 	float MaxSpeed = 1.0f;
+};
+
+class CFollowMouse : public Component
+{
+
 };

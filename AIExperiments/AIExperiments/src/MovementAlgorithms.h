@@ -3,6 +3,10 @@
 #include "helpers/Vec2.h";
 #include "core/Components.h"
 
+Vec2 OrientationAsVector(float currentOrientation);
+
+float RandomBinomial();
+
 namespace KinematicMovementsAlgorithms
 {
 	struct SteeringOutput
@@ -17,6 +21,12 @@ namespace KinematicMovementsAlgorithms
 	float NewOrientation(const float currentOrientation, const Vec2& velocity);
 
 	SteeringOutput Seek(StaticData& characterData, const StaticData& targetData, float maxSpeed);	
+
+	SteeringOutput Flee(StaticData& characterData, const StaticData& targetData, float maxSpeed);
+
+	SteeringOutput Arrive(StaticData& characterData, const StaticData& targetData, float maxSpeed, float satisfactionRadius, float timeToTarget);
+
+	SteeringOutput Wander(StaticData& characterData, float maxSpeed, float maxRotation);
 }
 
 namespace SteeringMovementAlgorithms
