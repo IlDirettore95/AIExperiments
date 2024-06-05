@@ -1,4 +1,4 @@
-#include "SceneKinematic.h"
+#include "SceneSteering.h"
 #include "core/GameEngine.h"
 #include <fstream>
 #include <string>
@@ -11,7 +11,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelPath)
+SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPath)
 	: Scene(gameEngine)
 {
 	// SetRandomSeed	
@@ -124,7 +124,7 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 	}
 }
 
-void SceneKinematic::Update()
+void SceneSteering::Update()
 {
 	m_entityManager.Update();
 
@@ -132,25 +132,25 @@ void SceneKinematic::Update()
 
 	switch (m_algorithmType)
 	{
-		case KinematicAlgorithmType::Seek:
+		case SteeringAlgorithmType::Seek:
 		{
 			SSeek();
 			break;
 		}
 
-		case KinematicAlgorithmType::Flee:
+		case SteeringAlgorithmType::Flee:
 		{
 			SFlee();
 			break;
 		}
 
-		case KinematicAlgorithmType::Arrive:
+		case SteeringAlgorithmType::Arrive:
 		{
 			SArrive();
 			break;
 		}
 
-		case KinematicAlgorithmType::Wander:
+		case SteeringAlgorithmType::Wander:
 		{
 			SWander();
 			break;
@@ -162,7 +162,7 @@ void SceneKinematic::Update()
 	m_currentFrame++;
 }
 
-void SceneKinematic::SDoAction(const Action& action)
+void SceneSteering::SDoAction(const Action& action)
 {
 	if (action.Type() == "START")
 	{
@@ -173,28 +173,28 @@ void SceneKinematic::SDoAction(const Action& action)
 		}
 		else if (action.Name() == "SWITCH_ALGORITHM")
 		{
-			m_algorithmType = (KinematicAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)KinematicAlgorithmType::Max));
+			m_algorithmType = (SteeringAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)SteeringAlgorithmType::Max));
 			switch (m_algorithmType)
 			{
-				case KinematicAlgorithmType::Seek:
+				case SteeringAlgorithmType::Seek:
 				{
 					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
 					break;
 				}
 
-				case KinematicAlgorithmType::Flee:
+				case SteeringAlgorithmType::Flee:
 				{
 					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
 					break;
 				}
 
-				case KinematicAlgorithmType::Arrive:
+				case SteeringAlgorithmType::Arrive:
 				{
 					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
 					break;
 				}
 
-				case KinematicAlgorithmType::Wander:
+				case SteeringAlgorithmType::Wander:
 				{
 					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
 					break;
@@ -208,7 +208,7 @@ void SceneKinematic::SDoAction(const Action& action)
 	}
 }
 
-void SceneKinematic::SRenderer()
+void SceneSteering::SRenderer()
 {
 	// color the background darker so you know that the game is paused
 	if (!m_paused) { m_game->window().clear(sf::Color(20, 20, 60)); }
@@ -250,7 +250,7 @@ void SceneKinematic::SRenderer()
 	m_game->window().display();
 }
 
-void SceneKinematic::STargetMovement()
+void SceneSteering::STargetMovement()
 {
 	for (auto e : m_entityManager.GetEntities())
 	{
@@ -262,7 +262,7 @@ void SceneKinematic::STargetMovement()
 	}
 }
 
-void SceneKinematic::SSeek()
+void SceneSteering::SSeek()
 {
 	for (auto e : m_entityManager.GetEntities())
 	{
@@ -270,18 +270,20 @@ void SceneKinematic::SSeek()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& target = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
 
 		for (auto otherE : m_entityManager.GetEntities())
 		{
 			if (e == otherE) continue;
-			if (otherE->id() == target.EntityID)
+			if (otherE->id() == aiSteering.EntityID)
 			{
 				if (otherE->HasComponent<CTransform>())
 				{
 					const CTransform& targetTransform = otherE->GetComponent<CTransform>();
-					KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Seek(transform.Static, targetTransform.Static, target.MaxSpeed);
-					KinematicMovementsAlgorithms::Update(transform.Static, steering);
+
+					SteeringMovementAlgorithms::SteeringOutput steering = SteeringMovementAlgorithms::Seek(transform.Static, targetTransform.Static, aiSteering.MaxAcceleration);
+					SteeringMovementAlgorithms::Update(transform.Static, transform.Dynamic, steering, aiSteering.MaxSpeed);
+					
 				}
 				break;
 			}
@@ -289,7 +291,7 @@ void SceneKinematic::SSeek()
 	}
 }
 
-void SceneKinematic::SFlee()
+void SceneSteering::SFlee()
 {
 	for (auto e : m_entityManager.GetEntities())
 	{
@@ -297,18 +299,19 @@ void SceneKinematic::SFlee()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& target = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
 
 		for (auto otherE : m_entityManager.GetEntities())
 		{
 			if (e == otherE) continue;
-			if (otherE->id() == target.EntityID)
+			if (otherE->id() == aiSteering.EntityID)
 			{
 				if (otherE->HasComponent<CTransform>())
 				{
 					const CTransform& targetTransform = otherE->GetComponent<CTransform>();
-					KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Flee(transform.Static, targetTransform.Static, target.MaxSpeed);
-					KinematicMovementsAlgorithms::Update(transform.Static, steering);
+
+					SteeringMovementAlgorithms::SteeringOutput steering = SteeringMovementAlgorithms::Flee(transform.Static, targetTransform.Static, aiSteering.MaxAcceleration);
+					SteeringMovementAlgorithms::Update(transform.Static, transform.Dynamic, steering, aiSteering.MaxSpeed);
 				}
 				break;
 			}
@@ -316,53 +319,53 @@ void SceneKinematic::SFlee()
 	}
 }
 
-void SceneKinematic::SArrive()
+void SceneSteering::SArrive()
 {
-	for (auto e : m_entityManager.GetEntities())
-	{
-		if (!e->HasComponent<CTransform>()) continue;
-		if (!e->HasComponent<CSteeringAI>()) continue;
+	//for (auto e : m_entityManager.GetEntities())
+	//{
+	//	if (!e->HasComponent<CTransform>()) continue;
+	//	if (!e->HasComponent<CSteeringAI>()) continue;
 
-		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& target = e->GetComponent<CSteeringAI>();
+	//	CTransform& transform = e->GetComponent<CTransform>();
+	//	const CSteeringAI& target = e->GetComponent<CSteeringAI>();
 
-		for (auto otherE : m_entityManager.GetEntities())
-		{
-			if (e == otherE) continue;
-			if (otherE->id() == target.EntityID)
-			{
-				if (otherE->HasComponent<CTransform>())
-				{
-					const CTransform& targetTransform = otherE->GetComponent<CTransform>();
-					KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Arrive(transform.Static, targetTransform.Static, target.MaxSpeed, 20.0f, 0.25f);
-					KinematicMovementsAlgorithms::Update(transform.Static, steering);
-				}
-				break;
-			}
-		}
-	}
+	//	for (auto otherE : m_entityManager.GetEntities())
+	//	{
+	//		if (e == otherE) continue;
+	//		if (otherE->id() == target.EntityID)
+	//		{
+	//			if (otherE->HasComponent<CTransform>())
+	//			{
+	//				const CTransform& targetTransform = otherE->GetComponent<CTransform>();
+	//				KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Arrive(transform.Static, targetTransform.Static, target.MaxSpeed, 20.0f, 0.25f);
+	//				KinematicMovementsAlgorithms::Update(transform.Static, steering);
+	//			}
+	//			break;
+	//		}
+	//	}
+	//}
 }
 
-void SceneKinematic::SWander()
+void SceneSteering::SWander()
 {
-	for (auto e : m_entityManager.GetEntities())
-	{
-		if (!e->HasComponent<CTransform>()) continue;
-		if (!e->HasComponent<CSteeringAI>()) continue;
+	//for (auto e : m_entityManager.GetEntities())
+	//{
+	//	if (!e->HasComponent<CTransform>()) continue;
+	//	if (!e->HasComponent<CSteeringAI>()) continue;
 
-		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& target = e->GetComponent<CSteeringAI>();
+	//	CTransform& transform = e->GetComponent<CTransform>();
+	//	const CSteeringAI& target = e->GetComponent<CSteeringAI>();
 
-		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Wander(transform.Static, target.MaxSpeed, 0.07f);
-		KinematicMovementsAlgorithms::Update(transform.Static, steering);
-	}
+	//	KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Wander(transform.Static, target.MaxSpeed, 0.07f);
+	//	KinematicMovementsAlgorithms::Update(transform.Static, steering);
+	//}
 }
 
-void SceneKinematic::OnEnd()
+void SceneSteering::OnEnd()
 {
 }
 
-Vec2 SceneKinematic::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)
+Vec2 SceneSteering::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)
 {
 	const Vec2& entitySize = entity->GetComponent<CAnimation>().animation.getSize();
 	Vec2 entityPosition = Vec2(gridX * m_gridSize.x, gridY * m_gridSize.y) + entitySize / 2;

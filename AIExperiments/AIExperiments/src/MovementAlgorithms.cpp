@@ -101,4 +101,42 @@ namespace KinematicMovementsAlgorithms
 	}
 }
 
+namespace SteeringMovementAlgorithms
+{
 
+	void Update(StaticData& staticData, DynamicData& dynamicData, const SteeringOutput& steering, float maxSpeed)
+	{
+		staticData.Position += dynamicData.Velocity;
+		staticData.Orientation += dynamicData.Rotation;
+
+		dynamicData.Velocity += steering.Linear;
+		dynamicData.Rotation += steering.Angular;
+
+		if (dynamicData.Velocity.Magnitude() > maxSpeed)
+		{
+			dynamicData.Velocity = dynamicData.Velocity.Normalize() * maxSpeed;
+		}
+	}
+
+	SteeringOutput Seek(const StaticData& characterData, const StaticData& targetData, float maxAcceleration)
+	{
+		SteeringOutput result;
+
+		result.Linear = targetData.Position - characterData.Position;
+		result.Linear = result.Linear.Normalize() * maxAcceleration;
+		result.Angular = 0.0f;
+
+		return result;
+	}
+
+	SteeringOutput Flee(const StaticData& characterData, const StaticData& targetData, float maxAcceleration)
+	{
+		SteeringOutput result;
+
+		result.Linear = characterData.Position - targetData.Position;
+		result.Linear = result.Linear.Normalize() * maxAcceleration;
+		result.Angular = 0.0f;
+
+		return result;
+	}
+}

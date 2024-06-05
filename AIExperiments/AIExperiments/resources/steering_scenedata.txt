@@ -1,4 +1,4 @@
 MovingTarget	
 AICharacter			AnimAICharacter			10		10
-Text				KINEMATIC_ALGORITHMS	640		100		Center
+Text				STEERING_ALGORITHMS		640		100		Center
 TextAlgorithmType	AlgorithmType			1220	200		Right	

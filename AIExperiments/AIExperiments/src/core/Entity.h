@@ -12,7 +12,7 @@ typedef std::tuple<
 	CAnimation,
 	CGravity,
 	CState,
-	CTarget,
+	CSteeringAI,
 	CText,
 	CFollowMouse
 > ComponentTuple;

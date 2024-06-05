@@ -3,7 +3,7 @@
 #include "core/Scene.h"
 #include <math.h>
 
-enum class KinematicAlgorithmType
+enum class SteeringAlgorithmType
 {
 	Seek,
 	Flee,
@@ -12,10 +12,10 @@ enum class KinematicAlgorithmType
 	Max
 };
 
-class SceneKinematic : public Scene
+class SceneSteering : public Scene
 {
 public:
-	SceneKinematic(GameEngine* gameEngine, const std::string& levelPath);
+	SceneSteering(GameEngine* gameEngine, const std::string& levelPath);
 	void Update();
 	void SDoAction(const Action& action);
 	void SRenderer();
@@ -36,5 +36,5 @@ private:
 	const Vec2 m_gridSize = { 32, 32 };
 	std::shared_ptr<Entity> m_target = nullptr;
 	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
-	KinematicAlgorithmType m_algorithmType = KinematicAlgorithmType::Seek;
+	SteeringAlgorithmType m_algorithmType = SteeringAlgorithmType::Seek;
 };

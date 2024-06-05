@@ -108,7 +108,7 @@
     <ClInclude Include="src\MovementAlgorithms.h" />
     <ClInclude Include="src\SceneKinematic.h" />
     <ClInclude Include="src\SceneMainMenu.h" />
-    <ClInclude Include="src\Scene_Play.h" />
+    <ClInclude Include="src\SceneSteering.h" />
     <ClInclude Include="src\helpers\Vec2.h" />
   </ItemGroup>
   <ItemGroup>
@@ -125,7 +125,7 @@
     <ClCompile Include="src\MovementAlgorithms.cpp" />
     <ClCompile Include="src\SceneKinematic.cpp" />
     <ClCompile Include="src\SceneMainMenu.cpp" />
-    <ClCompile Include="src\Scene_Play.cpp" />
+    <ClCompile Include="src\SceneSteering.cpp" />
     <ClCompile Include="src\helpers\Vec2.cpp" />
     <ClCompile Include="src\imgui-sfml\imgui-SFML.cpp" />
     <ClCompile Include="src\imgui-sfml\imgui.cpp" />
@@ -137,6 +137,7 @@
   <ItemGroup>
     <Text Include="resources\kinematic_scenedata.txt" />
     <Text Include="resources\main_menu_scenedata.txt" />
+    <Text Include="resources\steering_scenedata.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

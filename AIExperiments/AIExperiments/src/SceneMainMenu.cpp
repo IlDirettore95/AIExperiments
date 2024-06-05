@@ -4,6 +4,7 @@
 #include <string>
 #include "core/Components.h"
 #include "SceneKinematic.h"
+#include "SceneSteering.h"
 #include <memory>
 #include <filesystem>
 
@@ -15,8 +16,10 @@ SceneMainMenu::SceneMainMenu(GameEngine* gameEngine, const std::string& levelPat
 {
 	// Register Action
 	{
-		RegisterAction(sf::Keyboard::Num1, "KINEMATIC_SEEK");
-		RegisterAction(sf::Keyboard::Numpad1, "KINEMATIC_SEEK");
+		RegisterAction(sf::Keyboard::Num1, "KINEMATIC_ALGORITHMS");
+		RegisterAction(sf::Keyboard::Numpad1, "KINEMATIC_ALGORITHMS");
+		RegisterAction(sf::Keyboard::Num2, "STEERING_ALGORITHMS");
+		RegisterAction(sf::Keyboard::Numpad2, "STEERING_ALGORITHMS");
 	}
 
 	// Load Level
@@ -34,14 +37,31 @@ SceneMainMenu::SceneMainMenu(GameEngine* gameEngine, const std::string& levelPat
 				std::string text;
 				float posX = 0.0f;
 				float posY = 0.0f;
+				std::string alignment;
 
 				fin >> text;
 				fin >> posX;
 				fin >> posY;
+				fin >> alignment;
+
+				CText::AlignType alignmentType = CText::AlignType::Left;
+
+				if (alignment == "Left")
+				{
+					alignmentType = CText::AlignType::Left;
+				}
+				else if (alignment == "Center")
+				{
+					alignmentType = CText::AlignType::Center;
+				}
+				else if (alignment == "Right")
+				{
+					alignmentType = CText::AlignType::Right;
+				}
 
 				auto textEntity = m_entityManager.AddEntity("Text");
 				textEntity->AddComponent<CTransform>(Vec2(posX, posY));
-				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), 28, sf::Color{255, 255, 255});
+				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), 28, sf::Color{255, 255, 255}, alignmentType);
 			}
 		}
 
@@ -61,12 +81,16 @@ void SceneMainMenu::SDoAction(const Action& action)
 {
 	if (action.Type() == "START")
 	{
-		if (action.Name() == "KINEMATIC_SEEK") 
+		if (action.Name() == "KINEMATIC_ALGORITHMS") 
 		{ 
 			std::string scenePath = (std::filesystem::current_path() / "resources" / "kinematic_scenedata.txt").string();
-			m_game->changeScene("KINEMATIC_SEEK", std::make_shared<SceneKinematic>(m_game, scenePath));
+			m_game->changeScene("KINEMATIC_ALGORITHMS", std::make_shared<SceneKinematic>(m_game, scenePath));
 		}
-
+		else if (action.Name() == "STEERING_ALGORITHMS")
+		{
+			std::string scenePath = (std::filesystem::current_path() / "resources" / "steering_scenedata.txt").string();
+			m_game->changeScene("STEERING_ALGORITHMS", std::make_shared<SceneSteering>(m_game, scenePath));
+		}
 	}
 	else if (action.Type() == "END")
 	{

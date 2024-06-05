@@ -1,6 +1,6 @@
 #pragma once
 
-#include "helpers/Vec2.h";
+#include "helpers/Vec2.h"
 #include "core/Components.h"
 
 Vec2 OrientationAsVector(float currentOrientation);
@@ -11,10 +11,9 @@ namespace KinematicMovementsAlgorithms
 {
 	struct SteeringOutput
 	{
-		Vec2 Velocity = Vec2(0.0f, 0.0f);
+		Vec2 Velocity = { 0.0f, 0.0f };
 		float Rotation = 0.0f;
 	};
-
 
 	void Update(StaticData& data, const SteeringOutput& steering);
 
@@ -33,8 +32,13 @@ namespace SteeringMovementAlgorithms
 {
 	struct SteeringOutput
 	{
-		Vec2 Linear = Vec2(0.0f, 0.0f);
+		Vec2 Linear = { 0.0f, 0.0f };
 		float Angular = 0.0f;
 	};
 
+	void Update(StaticData& staticData, DynamicData& dynamicData, const SteeringOutput& steering, float maxSpeed);
+
+	SteeringOutput Seek(const StaticData& characterData, const StaticData& targetData, float maxAcceleration);
+
+	SteeringOutput Flee(const StaticData& characterData, const StaticData& targetData, float maxAcceleration);
 }

@@ -16,11 +16,18 @@ struct StaticData
 	float Orientation = 0.0f;
 };
 
+struct DynamicData
+{
+	Vec2 Velocity = { 0.0f, 0.0f };
+	float Rotation = 0.0f;
+};
+
 class CTransform : public Component
 {
 public:
 	StaticData Static;
-	Vec2 velocity = { 0.0, 0.0 };
+	DynamicData Dynamic;
+
 	Vec2 scale = { 1.0, 1.0 };
 	Vec2 prevPos = { 0.0, 0.0 };
 
@@ -30,10 +37,11 @@ public:
 		Static.Position = p;
 	}
 	CTransform(const Vec2& p, const Vec2& sp, const Vec2& sc, float a)
-		: prevPos(p), velocity(sp), scale(sc) 
+		: prevPos(p), scale(sc) 
 	{
 		Static.Position = p;
 		Static.Orientation = a;
+		Dynamic.Velocity = sp;
 	}
 };
 
@@ -105,22 +113,52 @@ public:
 class CText : public Component
 {
 public:
+	enum class AlignType
+	{
+		Left,
+		Center,
+		Right
+	};
+
+public:
 	sf::Text text;
 
 	CText() {}
-	CText(const std::string& name, const sf::Font& font, const uint32_t fontSize, const sf::Color& color)
+	CText(const std::string& name, const sf::Font& font, const uint32_t fontSize, const sf::Color& color, AlignType alignment)
 		: text(name, font, fontSize)
 	{
 		text.setFillColor(color);
-		text.setOrigin(text.getLocalBounds().width / 2 + text.getLocalBounds().left, text.getLocalBounds().height / 2 + text.getLocalBounds().top);
+
+		switch (alignment)
+		{
+		case CText::AlignType::Left:
+			{
+				text.setOrigin(text.getLocalBounds().left, text.getLocalBounds().height / 2 + text.getLocalBounds().top);
+			}
+			break;
+
+			case CText::AlignType::Center:
+			{
+				text.setOrigin(text.getLocalBounds().width / 2 + text.getLocalBounds().left, text.getLocalBounds().height / 2 + text.getLocalBounds().top);
+			}
+			break;
+
+			case CText::AlignType::Right:
+			{
+				text.setOrigin(text.getLocalBounds().width + text.getLocalBounds().left, text.getLocalBounds().height / 2 + text.getLocalBounds().top);
+			}
+			break;
+		}
 	}
+
 };
 
-class CTarget : public Component
+class CSteeringAI : public Component
 {
 public:
-	size_t EntityID;
-	float MaxSpeed = 1.0f;
+	size_t EntityID;			// Entity Target
+	float MaxSpeed = 1.0f;		
+	float MaxAcceleration = 1.0f;
 };
 
 class CFollowMouse : public Component
