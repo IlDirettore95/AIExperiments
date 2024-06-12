@@ -14,7 +14,8 @@ typedef std::tuple<
 	CState,
 	CSteeringAI,
 	CText,
-	CFollowMouse
+	CFollowMouse,
+	CCircleShape
 > ComponentTuple;
 
 class Entity

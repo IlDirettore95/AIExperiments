@@ -4,6 +4,7 @@
 #include "EntityManager.h"
 #include <memory>
 #include "Action.h"
+#include "..\helpers\Color.h"
 
 class GameEngine;
 
@@ -42,5 +43,5 @@ public:
 
 	bool HasEnded() const;
 	const ActionMap& GetActionMap() const;
-	void DrawLine(const Vec2& p1, const Vec2& p2);
+	void DrawLine(const Vec2& p1, const Vec2& p2, const Color& color);
 };

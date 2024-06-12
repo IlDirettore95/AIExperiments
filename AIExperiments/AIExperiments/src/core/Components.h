@@ -19,7 +19,7 @@ struct StaticData
 struct DynamicData
 {
 	Vec2 Velocity = { 0.0f, 0.0f };
-	float Rotation = 0.0f;
+	float Angular = 0.0f;
 };
 
 class CTransform : public Component
@@ -156,12 +156,41 @@ public:
 class CSteeringAI : public Component
 {
 public:
-	size_t EntityID;			// Entity Target
+	size_t EntityID;						// Entity Target
 	float MaxSpeed = 1.0f;		
 	float MaxAcceleration = 1.0f;
+	float MaxAngularSpeed = 1.0f;
+	float MaxAngularAcceleration = 1.0f;
+	float DistanceSlowRadius = 1.0f;
+	float DistanceTargetRadius = 1.0f;
+	float OrientationSlowRadius = 1.0f;
+	float OrientationTargetRadius = 1.0f;
+	float WanderOffset = 1.0f;
+	float WanderRadius = 1.0f;
+	float WanderRate = 1.0f;
+	float WanderOrientation = 0.0f;
 };
 
 class CFollowMouse : public Component
 {
 
+};
+
+// Define a shape to be rendered
+class CCircleShape : public Component
+{
+public:
+	sf::CircleShape shape;
+	float radius = 1.0f;
+	int points = 32;
+
+	CCircleShape() {}
+	CCircleShape(float radius, int points, const sf::Color& fill, const sf::Color& outline, float thickness)
+		: shape(radius, points), radius(radius), points(points)
+	{
+		shape.setFillColor(fill);
+		shape.setOutlineColor(outline);
+		shape.setOutlineThickness(thickness);
+		shape.setOrigin(radius, radius);
+	}
 };

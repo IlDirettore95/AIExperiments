@@ -34,6 +34,19 @@ void EntityManager::RemoveDeadEntities(EntityVector& v)
     std::erase_if(v, [](auto& entity) {return !entity->isActive(); });
 }
 
+std::shared_ptr<Entity> EntityManager::GetEntity(size_t id)
+{
+    for (auto e : m_entities)
+    {
+        if (e->id() == id)
+        {
+            return e;
+        }
+    }
+
+    return nullptr;
+}
+
 const EntityVector& EntityManager::GetEntities() const
 {
     return m_entities;

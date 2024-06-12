@@ -22,6 +22,7 @@ public:
 
 	std::shared_ptr<Entity> AddEntity(const std::string& tag);
 
+	std::shared_ptr<Entity> GetEntity(size_t id);
 	const EntityVector& GetEntities() const; 
 	const EntityVector& GetEntities(const std::string& tag);
 	const EntityMap& GetEntityMap() const;

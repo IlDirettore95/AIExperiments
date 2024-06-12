@@ -9,9 +9,29 @@ Vec2 OrientationAsVector(float currentOrientation)
 	return Vec2(cosf(currentOrientation), sinf(currentOrientation));
 }
 
+float VectorAsOrientation(Vec2 vector)
+{
+	return atan2f(vector.y, vector.x);
+}
+
 float RandomBinomial()
 {
 	return (((double)rand() / (RAND_MAX)) - ((double)rand() / (RAND_MAX)));
+}
+
+float MapToRange(float orientation)
+{
+	while (orientation > M_PI)
+	{
+		orientation -= (2 * M_PI);
+	}
+
+	while (orientation < -M_PI)
+	{
+		orientation += (2 * M_PI);
+	}
+
+	return orientation;
 }
 
 namespace KinematicMovementsAlgorithms
@@ -19,7 +39,7 @@ namespace KinematicMovementsAlgorithms
 	void Update(StaticData& data, const SteeringOutput& steering)
 	{
 		data.Position += steering.Velocity;
-		data.Orientation += steering.Rotation;
+		data.Orientation += steering.AngularVelocity;
 	}
 
 	float NewOrientation(const float currentOrientation, const Vec2& velocity)
@@ -44,7 +64,7 @@ namespace KinematicMovementsAlgorithms
 
 		characterData.Orientation = NewOrientation(characterData.Orientation, result.Velocity);
 
-		result.Rotation = 0;
+		result.AngularVelocity = 0;
 
 		return result;
 	}
@@ -59,7 +79,7 @@ namespace KinematicMovementsAlgorithms
 
 		characterData.Orientation = NewOrientation(characterData.Orientation, result.Velocity);
 
-		result.Rotation = 0;
+		result.AngularVelocity = 0;
 
 		return result;
 	}
@@ -84,7 +104,7 @@ namespace KinematicMovementsAlgorithms
 
 		characterData.Orientation = NewOrientation(characterData.Orientation, result.Velocity);
 
-		result.Rotation = 0;
+		result.AngularVelocity = 0;
 
 		return result;
 	}
@@ -95,47 +115,178 @@ namespace KinematicMovementsAlgorithms
 
 		result.Velocity = OrientationAsVector(characterData.Orientation) * maxSpeed;
 
-		result.Rotation = RandomBinomial() * maxRotation;
+		result.AngularVelocity = RandomBinomial() * maxRotation;
 
 		return result;
 	}
 }
 
-namespace SteeringMovementAlgorithms
+namespace SteeringMovementsAlgorithms
 {
 
-	void Update(StaticData& staticData, DynamicData& dynamicData, const SteeringOutput& steering, float maxSpeed)
+	void Update(StaticData& staticData, DynamicData& dynamicData, const SteeringOutput& steering, const CSteeringAI& characterSteering)
 	{
 		staticData.Position += dynamicData.Velocity;
-		staticData.Orientation += dynamicData.Rotation;
+		staticData.Orientation += dynamicData.Angular;
 
 		dynamicData.Velocity += steering.Linear;
-		dynamicData.Rotation += steering.Angular;
+		dynamicData.Angular += steering.Angular;
 
-		if (dynamicData.Velocity.Magnitude() > maxSpeed)
+		if (dynamicData.Velocity.Magnitude() > characterSteering.MaxSpeed)
 		{
-			dynamicData.Velocity = dynamicData.Velocity.Normalize() * maxSpeed;
+			dynamicData.Velocity = dynamicData.Velocity.Normalize() * characterSteering.MaxSpeed;
+		}
+
+		if (std::abs(dynamicData.Angular) > characterSteering.MaxAngularSpeed)
+		{
+			dynamicData.Angular /= std::abs(dynamicData.Angular) * characterSteering.MaxAngularSpeed;
 		}
 	}
 
-	SteeringOutput Seek(const StaticData& characterData, const StaticData& targetData, float maxAcceleration)
+	SteeringOutput Seek(const StaticData& characterData, const StaticData& targetData, const CSteeringAI& characterSteering)
 	{
 		SteeringOutput result;
 
 		result.Linear = targetData.Position - characterData.Position;
-		result.Linear = result.Linear.Normalize() * maxAcceleration;
+		result.Linear = result.Linear.Normalize() * characterSteering.MaxAcceleration;
 		result.Angular = 0.0f;
 
 		return result;
 	}
 
-	SteeringOutput Flee(const StaticData& characterData, const StaticData& targetData, float maxAcceleration)
+	SteeringOutput Flee(const StaticData& characterData, const StaticData& targetData, const CSteeringAI& characterSteering)
 	{
 		SteeringOutput result;
 
 		result.Linear = characterData.Position - targetData.Position;
-		result.Linear = result.Linear.Normalize() * maxAcceleration;
+		result.Linear = result.Linear.Normalize() * characterSteering.MaxAcceleration;
 		result.Angular = 0.0f;
+
+		return result;
+	}
+
+	SteeringOutput Arrive(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetData, const CSteeringAI& characterSteering)
+	{
+		SteeringOutput result;
+
+		Vec2 direction = targetData.Position - characterStaticData.Position;
+		float distance = direction.Magnitude();
+		if (distance <= characterSteering.DistanceTargetRadius)
+		{
+			return result;
+		}
+
+		float targetSpeed = 0.0f;
+		if (distance > characterSteering.DistanceSlowRadius)
+		{
+			targetSpeed = characterSteering.MaxSpeed;
+		}
+		else
+		{
+			targetSpeed = characterSteering.MaxSpeed * (distance - characterSteering.DistanceTargetRadius) / (characterSteering.DistanceSlowRadius - characterSteering.DistanceTargetRadius);
+		}
+
+		Vec2 targetVelocity = direction.Normalize() * targetSpeed;
+
+		result.Linear = targetVelocity - characterDynamicData.Velocity;
+
+		if (result.Linear.Magnitude() > characterSteering.MaxAcceleration)
+		{
+			result.Linear = result.Linear.Normalize() * characterSteering.MaxAcceleration;
+		}
+		result.Angular = 0.0f;
+
+		return result;
+	}
+
+	SteeringOutput Align(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetData, const CSteeringAI& characterSteering)
+	{
+		SteeringOutput result;
+
+		float angularDirection = targetData.Orientation - characterStaticData.Orientation;
+		angularDirection = MapToRange(angularDirection);
+		float angularDistance = std::abs(angularDirection);
+		if (angularDistance <= characterSteering.OrientationTargetRadius)
+		{
+			return result;
+		}
+
+		float targetAngularSpeed = 0.0f;
+		if (angularDistance > characterSteering.OrientationSlowRadius)
+		{
+			targetAngularSpeed = characterSteering.MaxAngularSpeed;
+		}
+		else
+		{
+			targetAngularSpeed = characterSteering.MaxAngularSpeed * angularDistance / characterSteering.OrientationSlowRadius;
+		}
+
+		// Multiply for 1 or -1 to reintroduce the direction
+		targetAngularSpeed *= angularDirection / angularDistance;
+
+		result.Angular = targetAngularSpeed - characterDynamicData.Angular;
+
+		float angularAcceleration = std::abs(result.Angular);
+		if (angularAcceleration > characterSteering.MaxAngularAcceleration)
+		{
+			result.Angular /= angularAcceleration;
+			result.Angular *= characterSteering.MaxAngularAcceleration;
+		}
+
+		result.Linear = Vec2();
+
+		return result;
+	}
+
+	SteeringOutput LookWhereYouAreGoing(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const CSteeringAI& characterSteering)
+	{
+		Vec2 velocity = characterDynamicData.Velocity;
+
+		if (velocity.Magnitude() == 0)
+		{
+			return SteeringOutput();
+		}
+		
+		StaticData targetData;
+		targetData.Orientation = VectorAsOrientation(velocity); 
+
+		return Align(characterStaticData, characterDynamicData, targetData, characterSteering);
+	}
+
+	SteeringOutput Face(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetData, const CSteeringAI& characterSteering)
+	{
+		SteeringOutput result;
+
+		Vec2 direction = targetData.Position - characterStaticData.Position;
+
+		if (direction.Magnitude() == 0.0f)
+		{
+			return result;
+		}
+
+		StaticData newTargetData = targetData;
+		newTargetData.Orientation = VectorAsOrientation(direction);
+
+		return Align(characterStaticData, characterDynamicData, newTargetData, characterSteering);
+	}
+
+	SteeringOutput Wander(const StaticData& characterStaticData, const DynamicData& characterDynamicData, CSteeringAI& characterSteering)
+	{
+		SteeringOutput result;
+
+		characterSteering.WanderOrientation += RandomBinomial() * characterSteering.WanderRate;
+
+		float targetOrientation = characterSteering.WanderOrientation + characterStaticData.Orientation;
+		Vec2 targetPosition = characterStaticData.Position + OrientationAsVector(characterStaticData.Orientation) * characterSteering.WanderOffset;
+		targetPosition += OrientationAsVector(targetOrientation) * characterSteering.WanderRadius;
+
+		StaticData targetData;
+		targetData.Position = targetPosition;
+		targetData.Orientation = targetOrientation;
+
+		result = Face(characterStaticData, characterDynamicData, targetData, characterSteering);
+
+		result.Linear = OrientationAsVector(targetOrientation) * characterSteering.MaxAcceleration;
 
 		return result;
 	}

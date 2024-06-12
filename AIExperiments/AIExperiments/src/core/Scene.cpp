@@ -54,8 +54,9 @@ const ActionMap& Scene::GetActionMap() const
 	return m_actionMap;
 }
 
-void Scene::DrawLine(const Vec2& p1, const Vec2& p2)
+void Scene::DrawLine(const Vec2& p1, const Vec2& p2, const Color& color)
 {
-	sf::Vertex line[] = { sf::Vector2f(p1.x, p1.y), sf::Vector2f(p2.x, p2.y) };
+	sf::Color sfColor(color.r * 255, color.g * 255, color.b * 255, 255);
+	sf::Vertex line[] = { sf::Vertex(sf::Vector2f(p1.x, p1.y), sfColor), sf::Vertex(sf::Vector2f(p2.x, p2.y), sfColor) };
 	m_game->window().draw(line, 2, sf::Lines);
 }

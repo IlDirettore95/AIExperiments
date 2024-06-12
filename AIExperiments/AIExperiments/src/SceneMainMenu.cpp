@@ -100,6 +100,9 @@ void SceneMainMenu::SDoAction(const Action& action)
 
 void SceneMainMenu::SRenderer()
 {
+	// turn off cursor
+	m_game->window().setMouseCursorVisible(false);
+
 	// color the background darker so you know that the game is paused
 	if (!m_paused) { m_game->window().clear(sf::Color(20, 20, 60)); }
 	else { m_game->window().clear(sf::Color(0, 0, 30)); }
