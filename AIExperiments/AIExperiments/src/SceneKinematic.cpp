@@ -21,6 +21,7 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 	{
 		RegisterAction(sf::Keyboard::Escape, "BACK_TO_MAIN_MENU");
 		RegisterAction(sf::Keyboard::Space, "SWITCH_ALGORITHM");
+		RegisterAction(sf::Keyboard::G, "TOGGLE_GIZMOS");
 	}
 
 	// Load Level
@@ -54,19 +55,26 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 			{
 				m_target = m_entityManager.AddEntity("MovingTarget");
 				m_target->AddComponent<CTransform>();
-				m_target->AddComponent<CFollowMouse>();
-				m_target->AddComponent<CCircleShape>(10.0f, 20, sf::Color::Transparent, sf::Color::Green, 1.0f);
+				auto& followMouseComponent = m_target->AddComponent<CFollowMouse>();
+				followMouseComponent.debugCircle.setRadius(5.0f);
+				followMouseComponent.debugCircle.setPointCount(20);
+				followMouseComponent.debugCircle.setFillColor(sf::Color::White);
+				followMouseComponent.debugCircle.setOutlineColor(sf::Color::White);
+				followMouseComponent.debugCircle.setOutlineThickness(1.0f);
+				followMouseComponent.debugCircle.setOrigin(5.0f, 5.0f);
 			}
 			else if (label == "TextAlgorithmType")
 			{
 				std::string text;
 				float posX = 0.0f;
 				float posY = 0.0f;
+				int fontSize = 0;
 				std::string alignment;
 
 				fin >> text;
 				fin >> posX;
 				fin >> posY;
+				fin >> fontSize;
 				fin >> alignment;
 
 				CText::AlignType alignmentType = CText::AlignType::Left;
@@ -86,7 +94,7 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 
 				m_algorithmDescription = m_entityManager.AddEntity("Text");
 				m_algorithmDescription->AddComponent<CTransform>(Vec2(posX, posY));
-				auto& textComponent = m_algorithmDescription->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), 28, sf::Color{ 255, 255, 255 }, alignmentType);
+				auto& textComponent = m_algorithmDescription->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), fontSize, sf::Color{ 255, 255, 255 }, alignmentType);
 				textComponent.text.setString("Algorithm: Seek");
 			}
 			else if (label == "Text")
@@ -94,11 +102,13 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 				std::string text;
 				float posX = 0.0f;
 				float posY = 0.0f;
+				int fontSize = 0;
 				std::string alignment;
 
 				fin >> text;
 				fin >> posX;
 				fin >> posY;
+				fin >> fontSize;
 				fin >> alignment;
 
 				CText::AlignType alignmentType = CText::AlignType::Left;
@@ -118,7 +128,7 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 
 				auto textEntity = m_entityManager.AddEntity("Text");
 				textEntity->AddComponent<CTransform>(Vec2(posX, posY));
-				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), 28, sf::Color{ 255, 255, 255 }, alignmentType);
+				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), fontSize, sf::Color{ 255, 255, 255 }, alignmentType);
 			}
 		}
 
@@ -202,6 +212,10 @@ void SceneKinematic::SDoAction(const Action& action)
 				}
 			}
 		}
+		else if (action.Name() == "TOGGLE_GIZMOS")
+		{
+			m_drawGizmos = !m_drawGizmos;
+		}
 	}
 	else if (action.Type() == "END")
 	{
@@ -211,9 +225,6 @@ void SceneKinematic::SDoAction(const Action& action)
 
 void SceneKinematic::SRenderer()
 {
-	// turn off cursor
-	m_game->window().setMouseCursorVisible(false);
-
 	// color the background darker so you know that the game is paused
 	if (!m_paused) { m_game->window().clear(sf::Color(20, 20, 60)); }
 	else { m_game->window().clear(sf::Color(0, 0, 30)); }
@@ -252,36 +263,80 @@ void SceneKinematic::SRenderer()
 	}
 
 	// Draw Gizmos
-	for (auto e : m_entityManager.GetEntities())
+	if (!m_drawGizmos)
 	{
-		if (e->HasComponent<CTransform>())
+		m_game->window().setMouseCursorVisible(true);
+	}
+	else
+	{
+		m_game->window().setMouseCursorVisible(false);
+
+		for (auto e : m_entityManager.GetEntities())
 		{
-			const auto& transform = e->GetComponent<CTransform>();
-
-			if (e->HasComponent<CCircleShape>())
+			if (e->HasComponent<CTransform>())
 			{
-				auto& circleShape = e->GetComponent<CCircleShape>();
+				const auto& transform = e->GetComponent<CTransform>();
 
-				circleShape.shape.setPosition(transform.Static.Position.x, transform.Static.Position.y);
+				if (e->HasComponent<CFollowMouse>())
+				{
+					auto& followMouseComponent = e->GetComponent<CFollowMouse>();
 
-				m_game->window().draw(circleShape.shape);
-			}
+					followMouseComponent.debugCircle.setPosition(transform.Static.Position.x, transform.Static.Position.y);
 
-			if (e->HasComponent<CSteeringAI>())
-			{
-				auto& steeringAI = e->GetComponent<CSteeringAI>();
+					m_game->window().draw(followMouseComponent.debugCircle);
+				}
 
-				auto otherE = m_entityManager.GetEntity(steeringAI.EntityID);
-				if (e == otherE) continue;
-				if (!e->HasComponent<CTransform>()) continue;
-				const CTransform& targetTransform = otherE->GetComponent<CTransform>();
+				if (e->HasComponent<CSteeringAI>())
+				{
+					auto& steeringAI = e->GetComponent<CSteeringAI>();
 
-				DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
-				DrawLine(transform.Static.Position, transform.Static.Position + OrientationAsVector(transform.Static.Orientation).Normalize() * 50.0f, Color(1.0f, 1.0f, 0.0f));
-				DrawLine(transform.Static.Position, transform.Static.Position + transform.Dynamic.Velocity.Normalize() * 50.0f, Color(0.5f, 0.5f, 0.5f));
+					auto otherE = m_entityManager.GetEntity(steeringAI.EntityID);
+					if (e == otherE) continue;
+					if (!e->HasComponent<CTransform>()) continue;
+					const CTransform& targetTransform = otherE->GetComponent<CTransform>();
+
+					switch (m_algorithmType)
+					{
+						case KinematicAlgorithmType::Seek:
+						{
+							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
+							break;
+						}
+
+						case KinematicAlgorithmType::Flee:
+						{
+							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
+							break;
+						}
+
+						case KinematicAlgorithmType::Arrive:
+						{
+							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
+
+							sf::CircleShape slowRadiusShape(steeringAI.DistanceSlowRadius, 40);
+							slowRadiusShape.setFillColor(sf::Color::Transparent);
+							slowRadiusShape.setOutlineColor(sf::Color::Green);
+							slowRadiusShape.setOutlineThickness(1.0f);
+							slowRadiusShape.setOrigin(steeringAI.DistanceSlowRadius, steeringAI.DistanceSlowRadius);
+							slowRadiusShape.setPosition(targetTransform.Static.Position.x, targetTransform.Static.Position.y);
+
+							m_game->window().draw(slowRadiusShape);
+							break;
+						}
+
+						case KinematicAlgorithmType::Wander:
+						{
+							break;
+						}
+					}
+				
+					DrawLine(transform.Static.Position, transform.Static.Position + OrientationAsVector(transform.Static.Orientation).Normalize() * 50.0f, Color(1.0f, 1.0f, 0.0f));
+					DrawLine(transform.Static.Position, transform.Static.Position + transform.Dynamic.Velocity.Normalize() * 50.0f, Color(0.5f, 0.5f, 0.5f));
+				}
 			}
 		}
 	}
+
 
 	m_game->window().display();
 }
@@ -306,14 +361,14 @@ void SceneKinematic::SSeek()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& target = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
 
-		auto otherE = m_entityManager.GetEntity(target.EntityID);
-		if (e == otherE) continue;
-		if (!e->HasComponent<CTransform>()) continue;
+		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (!target && target == e) continue;
+		if (!target->HasComponent<CTransform>()) continue;
+		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
-		const CTransform& targetTransform = otherE->GetComponent<CTransform>();
-		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Seek(transform.Static, targetTransform.Static, target.MaxSpeed);
+		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Seek(transform.Static, targetTransform.Static, aiSteering.MaxSpeed);
 		KinematicMovementsAlgorithms::Update(transform.Static, steering);
 	}
 }
@@ -326,22 +381,15 @@ void SceneKinematic::SFlee()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& target = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
 
-		for (auto otherE : m_entityManager.GetEntities())
-		{
-			if (e == otherE) continue;
-			if (otherE->id() == target.EntityID)
-			{
-				if (otherE->HasComponent<CTransform>())
-				{
-					const CTransform& targetTransform = otherE->GetComponent<CTransform>();
-					KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Flee(transform.Static, targetTransform.Static, target.MaxSpeed);
-					KinematicMovementsAlgorithms::Update(transform.Static, steering);
-				}
-				break;
-			}
-		}
+		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (!target && target == e) continue;
+		if (!target->HasComponent<CTransform>()) continue;
+		const CTransform& targetTransform = target->GetComponent<CTransform>();
+
+		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Flee(transform.Static, targetTransform.Static, aiSteering.MaxSpeed);
+		KinematicMovementsAlgorithms::Update(transform.Static, steering);
 	}
 }
 
@@ -353,22 +401,15 @@ void SceneKinematic::SArrive()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& target = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
 
-		for (auto otherE : m_entityManager.GetEntities())
-		{
-			if (e == otherE) continue;
-			if (otherE->id() == target.EntityID)
-			{
-				if (otherE->HasComponent<CTransform>())
-				{
-					const CTransform& targetTransform = otherE->GetComponent<CTransform>();
-					KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Arrive(transform.Static, targetTransform.Static, target.MaxSpeed, 20.0f, 0.25f);
-					KinematicMovementsAlgorithms::Update(transform.Static, steering);
-				}
-				break;
-			}
-		}
+		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (!target && target == e) continue;
+		if (!target->HasComponent<CTransform>()) continue;
+		const CTransform& targetTransform = target->GetComponent<CTransform>();
+
+		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Arrive(transform.Static, targetTransform.Static, aiSteering.MaxSpeed, 20.0f, 0.25f);
+		KinematicMovementsAlgorithms::Update(transform.Static, steering);
 	}
 }
 

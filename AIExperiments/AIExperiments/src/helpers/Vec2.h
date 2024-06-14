@@ -25,7 +25,7 @@ public:
 	void operator *= (const float a);
 	void operator /= (const float a);
 
-	friend std::ostream& operator << (std::ostream& os, Vec2& v);
+	friend std::ostream& operator << (std::ostream& os, const Vec2& v);
 
 	Vec2& Add(const Vec2& v);
 	Vec2& Substract(const Vec2& v);

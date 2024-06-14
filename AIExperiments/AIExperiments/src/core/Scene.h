@@ -43,5 +43,6 @@ public:
 
 	bool HasEnded() const;
 	const ActionMap& GetActionMap() const;
-	void DrawLine(const Vec2& p1, const Vec2& p2, const Color& color);
+	void DrawLine(const Vec2& start, const Vec2& end, const Color& color);
+	void DrawCircle(const Vec2& center, float radius, int points, const Color& fillColor, const Color& outlineColor, float thickness);
 };

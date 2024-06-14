@@ -173,7 +173,8 @@ public:
 
 class CFollowMouse : public Component
 {
-
+public:
+	sf::CircleShape debugCircle;
 };
 
 // Define a shape to be rendered

@@ -61,7 +61,7 @@ Vec2 Vec2::operator-(const Vec2& v) const
 	return Vec2(x - v.x, y - v.y);
 }
 
-std::ostream& operator<<(std::ostream& os, Vec2& v)
+std::ostream& operator<<(std::ostream& os, const Vec2& v)
 {
 	os << "(" << v.x << " , " << v.y << ")";
 	return os;

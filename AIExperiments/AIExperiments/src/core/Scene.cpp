@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "GameEngine.h"
+#include <iostream>
 
 void Scene::SetPaused(bool paused)
 {
@@ -54,9 +55,26 @@ const ActionMap& Scene::GetActionMap() const
 	return m_actionMap;
 }
 
-void Scene::DrawLine(const Vec2& p1, const Vec2& p2, const Color& color)
+void Scene::DrawLine(const Vec2& start, const Vec2& end, const Color& color)
 {
 	sf::Color sfColor(color.r * 255, color.g * 255, color.b * 255, 255);
-	sf::Vertex line[] = { sf::Vertex(sf::Vector2f(p1.x, p1.y), sfColor), sf::Vertex(sf::Vector2f(p2.x, p2.y), sfColor) };
+	sf::Vertex line[] = { sf::Vertex(sf::Vector2f(start.x, start.y), sfColor), sf::Vertex(sf::Vector2f(end.x, end.y), sfColor) };
 	m_game->window().draw(line, 2, sf::Lines);
+}
+
+void Scene::DrawCircle(const Vec2& center, float radius, int points, const Color& fillColor, const Color& outlineColor, float thickness)
+{
+	sf::Color sfFillColor(fillColor.r * 255, fillColor.g * 255, fillColor.b * 255, 255);
+	sf::Color sfOutlineColor(outlineColor.r * 255, outlineColor.g * 255, outlineColor.b * 255, 255);
+
+	sf::CircleShape sfCircleShape;
+	sfCircleShape.setRadius(radius);
+	sfCircleShape.setOrigin(radius, radius);
+	sfCircleShape.setPointCount(points);
+	sfCircleShape.setFillColor(sfFillColor);
+	sfCircleShape.setOutlineColor(sfOutlineColor);
+	sfCircleShape.setOutlineThickness(thickness);
+	sfCircleShape.setPosition(center.x, center.y);
+
+	m_game->window().draw(sfCircleShape);
 }

@@ -2,6 +2,7 @@
 
 #include "helpers/Vec2.h"
 #include "core/Components.h"
+#include "core/Scene.h"
 
 Vec2 OrientationAsVector(float currentOrientation);
 

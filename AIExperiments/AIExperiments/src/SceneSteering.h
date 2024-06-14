@@ -37,4 +37,5 @@ private:
 	std::shared_ptr<Entity> m_target = nullptr;
 	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
 	SteeringAlgorithmType m_algorithmType = SteeringAlgorithmType::Seek;
+	bool m_drawGizmos = true;
 };

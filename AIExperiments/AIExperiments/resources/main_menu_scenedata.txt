@@ -1,3 +1,3 @@
-Text MAINMENU					640		100		Center
-Text 1_KinematicAlgorithms		60		200		Left
-Text 2_SteeringAlgorithms		60		240		Left
+Text MAIN_MENU					640		100		36	Center
+Text 1_KinematicAlgorithms		60		200		28	Left
+Text 2_SteeringAlgorithms		60		240		28	Left

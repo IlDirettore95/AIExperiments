@@ -37,11 +37,13 @@ SceneMainMenu::SceneMainMenu(GameEngine* gameEngine, const std::string& levelPat
 				std::string text;
 				float posX = 0.0f;
 				float posY = 0.0f;
+				int fontSize = 0;
 				std::string alignment;
 
 				fin >> text;
 				fin >> posX;
 				fin >> posY;
+				fin >> fontSize;
 				fin >> alignment;
 
 				CText::AlignType alignmentType = CText::AlignType::Left;
@@ -61,7 +63,7 @@ SceneMainMenu::SceneMainMenu(GameEngine* gameEngine, const std::string& levelPat
 
 				auto textEntity = m_entityManager.AddEntity("Text");
 				textEntity->AddComponent<CTransform>(Vec2(posX, posY));
-				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), 28, sf::Color{255, 255, 255}, alignmentType);
+				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), fontSize, sf::Color{255, 255, 255}, alignmentType);
 			}
 		}
 
@@ -100,9 +102,6 @@ void SceneMainMenu::SDoAction(const Action& action)
 
 void SceneMainMenu::SRenderer()
 {
-	// turn off cursor
-	m_game->window().setMouseCursorVisible(false);
-
 	// color the background darker so you know that the game is paused
 	if (!m_paused) { m_game->window().clear(sf::Color(20, 20, 60)); }
 	else { m_game->window().clear(sf::Color(0, 0, 30)); }

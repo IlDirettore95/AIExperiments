@@ -37,4 +37,5 @@ private:
 	std::shared_ptr<Entity> m_target = nullptr;
 	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
 	KinematicAlgorithmType m_algorithmType = KinematicAlgorithmType::Seek;
+	bool m_drawGizmos = true;
 };

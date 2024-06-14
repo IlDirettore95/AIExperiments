@@ -255,18 +255,14 @@ namespace SteeringMovementsAlgorithms
 
 	SteeringOutput Face(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetData, const CSteeringAI& characterSteering)
 	{
-		SteeringOutput result;
-
 		Vec2 direction = targetData.Position - characterStaticData.Position;
-
 		if (direction.Magnitude() == 0.0f)
 		{
-			return result;
+			return SteeringOutput();
 		}
 
 		StaticData newTargetData = targetData;
-		newTargetData.Orientation = VectorAsOrientation(direction);
-
+		newTargetData.Orientation = VectorAsOrientation(direction.Normalize());
 		return Align(characterStaticData, characterDynamicData, newTargetData, characterSteering);
 	}
 
@@ -285,8 +281,8 @@ namespace SteeringMovementsAlgorithms
 		targetData.Orientation = targetOrientation;
 
 		result = Face(characterStaticData, characterDynamicData, targetData, characterSteering);
-
-		result.Linear = OrientationAsVector(targetOrientation) * characterSteering.MaxAcceleration;
+		
+		result.Linear = OrientationAsVector(characterStaticData.Orientation) * characterSteering.MaxAcceleration;
 
 		return result;
 	}
