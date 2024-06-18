@@ -61,9 +61,6 @@ namespace KinematicMovementsAlgorithms
 		result.Velocity = targetData.Position - characterData.Position;
 		result.Velocity = result.Velocity.Normalize();
 		result.Velocity *= maxSpeed;
-
-		characterData.Orientation = NewOrientation(characterData.Orientation, result.Velocity);
-
 		result.AngularVelocity = 0;
 
 		return result;
@@ -71,16 +68,8 @@ namespace KinematicMovementsAlgorithms
 
 	SteeringOutput Flee(StaticData& characterData, const StaticData& targetData, float maxSpeed)
 	{
-		SteeringOutput result;
-
-		result.Velocity = characterData.Position - targetData.Position;
-		result.Velocity = result.Velocity.Normalize();
-		result.Velocity *= maxSpeed;
-
-		characterData.Orientation = NewOrientation(characterData.Orientation, result.Velocity);
-
-		result.AngularVelocity = 0;
-
+		SteeringOutput result = Seek(characterData, targetData, maxSpeed);
+		result.Velocity *= -1;
 		return result;
 	}
 
@@ -101,8 +90,6 @@ namespace KinematicMovementsAlgorithms
 		{
 			result.Velocity = result.Velocity.Normalize() * maxSpeed;
 		}
-
-		characterData.Orientation = NewOrientation(characterData.Orientation, result.Velocity);
 
 		result.AngularVelocity = 0;
 
@@ -156,12 +143,8 @@ namespace SteeringMovementsAlgorithms
 
 	SteeringOutput Flee(const StaticData& characterData, const StaticData& targetData, const CSteeringAI& characterSteering)
 	{
-		SteeringOutput result;
-
-		result.Linear = characterData.Position - targetData.Position;
-		result.Linear = result.Linear.Normalize() * characterSteering.MaxAcceleration;
-		result.Angular = 0.0f;
-
+		SteeringOutput result = Seek(characterData, targetData, characterSteering);
+		result.Linear *= -1;
 		return result;
 	}
 
@@ -284,6 +267,36 @@ namespace SteeringMovementsAlgorithms
 		
 		result.Linear = OrientationAsVector(characterStaticData.Orientation) * characterSteering.MaxAcceleration;
 
+		return result;
+	}
+
+	SteeringOutput Pursue(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetStaticData, const DynamicData& targetDynamicData, const CSteeringAI& characterSteering)
+	{
+		Vec2 direction = targetStaticData.Position - characterStaticData.Position;
+		float distance = direction.Magnitude();
+		float speed = characterDynamicData.Velocity.Magnitude();
+		float prediction = 0.0f;
+
+		if (speed <= distance / characterSteering.MaxPreditionTime)
+		{
+			prediction = characterSteering.MaxPreditionTime;
+		}
+		else
+		{
+			prediction = distance / speed;
+		}
+
+		StaticData explicitTarget = targetStaticData;
+		explicitTarget.Position += targetDynamicData.Velocity * prediction;
+		explicitTarget.Orientation = 0.0f;
+
+		return Seek(characterStaticData, explicitTarget, characterSteering);
+	}
+
+	SteeringOutput Evade(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetStaticData, const DynamicData& targetDynamicData, const CSteeringAI& characterSteering)
+	{
+		SteeringOutput result = Pursue(characterStaticData, characterDynamicData, targetStaticData, targetDynamicData, characterSteering);
+		result.Linear *= -1;
 		return result;
 	}
 }

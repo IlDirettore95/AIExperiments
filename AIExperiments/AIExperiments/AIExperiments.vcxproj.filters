@@ -14,13 +14,13 @@
     <ClInclude Include="src\core\Entity.h" />
     <ClInclude Include="src\core\EntityManager.h" />
     <ClInclude Include="src\core\GameEngine.h" />
-    <ClInclude Include="src\core\Physics.h" />
     <ClInclude Include="src\core\Scene.h" />
     <ClInclude Include="src\helpers\Vec2.h" />
     <ClInclude Include="src\SceneKinematic.h" />
     <ClInclude Include="src\MovementAlgorithms.h" />
     <ClInclude Include="src\SceneMainMenu.h" />
     <ClInclude Include="src\SceneSteering.h" />
+    <ClInclude Include="src\helpers\Deserializer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Action.cpp" />
@@ -31,7 +31,6 @@
     <ClCompile Include="src\core\EntityManager.cpp" />
     <ClCompile Include="src\core\GameEngine.cpp" />
     <ClCompile Include="src\core\Main.cpp" />
-    <ClCompile Include="src\core\Physics.cpp" />
     <ClCompile Include="src\core\Scene.cpp" />
     <ClCompile Include="src\helpers\Vec2.cpp" />
     <ClCompile Include="src\imgui-sfml\imgui-SFML.cpp">
@@ -56,6 +55,7 @@
     <ClCompile Include="src\MovementAlgorithms.cpp" />
     <ClCompile Include="src\SceneMainMenu.cpp" />
     <ClCompile Include="src\SceneSteering.cpp" />
+    <ClCompile Include="src\helpers\Deserializer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\kinematic_scenedata.txt" />

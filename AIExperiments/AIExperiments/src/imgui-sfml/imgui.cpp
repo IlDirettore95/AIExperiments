@@ -7380,9 +7380,9 @@ void ImGui::PopTabStop()
     PopItemFlag();
 }
 
-void ImGui::PushButtonRepeat(bool repeat)
+void ImGui::PushButtonRepeat(bool Repeat)
 {
-    PushItemFlag(ImGuiItemFlags_ButtonRepeat, repeat);
+    PushItemFlag(ImGuiItemFlags_ButtonRepeat, Repeat);
 }
 
 void ImGui::PopButtonRepeat()
@@ -8532,9 +8532,9 @@ bool ImGui::IsKeyDown(ImGuiKey key, ImGuiID owner_id)
     return true;
 }
 
-bool ImGui::IsKeyPressed(ImGuiKey key, bool repeat)
+bool ImGui::IsKeyPressed(ImGuiKey key, bool Repeat)
 {
-    return IsKeyPressed(key, ImGuiKeyOwner_Any, repeat ? ImGuiInputFlags_Repeat : ImGuiInputFlags_None);
+    return IsKeyPressed(key, ImGuiKeyOwner_Any, Repeat ? ImGuiInputFlags_Repeat : ImGuiInputFlags_None);
 }
 
 // Important: unless legacy IsKeyPressed(ImGuiKey, bool repeat=true) which DEFAULT to repeat, this requires EXPLICIT repeat.
@@ -8606,9 +8606,9 @@ bool ImGui::IsMouseDown(ImGuiMouseButton button, ImGuiID owner_id)
     return g.IO.MouseDown[button] && TestKeyOwner(MouseButtonToKey(button), owner_id); // Should be same as IsKeyDown(MouseButtonToKey(button), owner_id), but this allows legacy code hijacking the io.Mousedown[] array.
 }
 
-bool ImGui::IsMouseClicked(ImGuiMouseButton button, bool repeat)
+bool ImGui::IsMouseClicked(ImGuiMouseButton button, bool Repeat)
 {
-    return IsMouseClicked(button, ImGuiKeyOwner_Any, repeat ? ImGuiInputFlags_Repeat : ImGuiInputFlags_None);
+    return IsMouseClicked(button, ImGuiKeyOwner_Any, Repeat ? ImGuiInputFlags_Repeat : ImGuiInputFlags_None);
 }
 
 bool ImGui::IsMouseClicked(ImGuiMouseButton button, ImGuiID owner_id, ImGuiInputFlags flags)
@@ -8622,8 +8622,8 @@ bool ImGui::IsMouseClicked(ImGuiMouseButton button, ImGuiID owner_id, ImGuiInput
         return false;
     IM_ASSERT((flags & ~ImGuiInputFlags_SupportedByIsMouseClicked) == 0); // Passing flags not supported by this function! // FIXME: Could support RepeatRate and RepeatUntil flags here.
 
-    const bool repeat = (flags & ImGuiInputFlags_Repeat) != 0;
-    const bool pressed = (t == 0.0f) || (repeat && t > g.IO.KeyRepeatDelay && CalcTypematicRepeatAmount(t - g.IO.DeltaTime, t, g.IO.KeyRepeatDelay, g.IO.KeyRepeatRate) > 0);
+    const bool Repeat = (flags & ImGuiInputFlags_Repeat) != 0;
+    const bool pressed = (t == 0.0f) || (Repeat && t > g.IO.KeyRepeatDelay && CalcTypematicRepeatAmount(t - g.IO.DeltaTime, t, g.IO.KeyRepeatDelay, g.IO.KeyRepeatRate) > 0);
     if (!pressed)
         return false;
 

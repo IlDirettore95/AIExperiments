@@ -110,9 +110,9 @@ void Assets::AddFont(const std::string& name, const std::string& path)
 #endif
 }
 
-void Assets::AddAnimation(const std::string& name, Animation animation)
+void Assets::AddAnimation(const std::string& name, Animation Animation)
 {
-	m_animations[name] = animation;
+	m_animations[name] = Animation;
 
 #if GE_DEBUG
 	std::cout << "Animation loaded! " << name << std::endl;

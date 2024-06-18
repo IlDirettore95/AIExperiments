@@ -18,7 +18,7 @@ public:
 	void LoadFromFile();
 
 	void AddTexture(const std::string& name, const std::string& path);
-	void AddAnimation(const std::string& name, Animation animation);
+	void AddAnimation(const std::string& name, Animation Animation);
 	void AddSound(const std::string& name, const std::string& path);
 	void AddFont(const std::string& name, const std::string& path);
 

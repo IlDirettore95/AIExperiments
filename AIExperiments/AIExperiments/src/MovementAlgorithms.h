@@ -56,4 +56,8 @@ namespace SteeringMovementsAlgorithms
 	SteeringOutput Face(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetData, const CSteeringAI& characterSteering);
 
 	SteeringOutput Wander(const StaticData& characterStaticData, const DynamicData& characterDynamicData, CSteeringAI& characterSteering);
+
+	SteeringOutput Pursue(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetStaticData, const DynamicData& targetDynamicData, const CSteeringAI& characterSteering);
+
+	SteeringOutput Evade(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetStaticData, const DynamicData& targetDynamicData, const CSteeringAI& characterSteering);
 }

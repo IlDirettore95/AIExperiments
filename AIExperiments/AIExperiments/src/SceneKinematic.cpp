@@ -10,6 +10,7 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include "helpers/Deserializer.h"
 
 SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelPath)
 	: Scene(gameEngine)
@@ -36,20 +37,28 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 		{
 			if (label == "AICharacter")
 			{
+				auto entity = m_entityManager.AddEntity("AICharacter");
+				Deserializer::DeserializeTransform(fin, entity);
+
 				std::string animationName;
-				float posX = 0.0f;
-				float posY = 0.0f;
+				fin >> animationName;;
 
-				fin >> animationName;
-				fin >> posX;
-				fin >> posY;
-
-				auto aiCharacter = m_entityManager.AddEntity("AICharacter");
-				aiCharacter->AddComponent<CAnimation>(m_game->assets().GetAnimation(animationName), true);
-				aiCharacter->AddComponent<CTransform>(GridToMidPixel(posX, posY, aiCharacter));
-				CSteeringAI& targetToSeek = aiCharacter->AddComponent<CSteeringAI>();
-				targetToSeek.EntityID = m_target->id();
-				targetToSeek.MaxSpeed = 2.0f;
+				entity->AddComponent<CAnimation>(m_game->assets().GetAnimation(animationName), true);
+				CSteeringAI& aiSteering = entity->AddComponent<CSteeringAI>();
+				aiSteering.EntityID = m_target->id();
+				aiSteering.MaxSpeed = 2.0f;
+				aiSteering.MaxAcceleration = 0.0f;
+				aiSteering.MaxAngularSpeed = 0.0f;
+				aiSteering.MaxAngularAcceleration = 0.0f;
+				aiSteering.DistanceSlowRadius = 20.0f;
+				aiSteering.DistanceTargetRadius = 0.0f;
+				aiSteering.OrientationSlowRadius = 0.0f;
+				aiSteering.OrientationTargetRadius = 0.0f;
+				aiSteering.WanderOffset = 0.0f;
+				aiSteering.WanderRadius = 0.0f;
+				aiSteering.WanderRate = 0.0f;
+				aiSteering.WanderOrientation = 0.0f;
+				aiSteering.MaxPreditionTime = 0.0f;
 			}
 			else if (label == "MovingTarget")
 			{
@@ -65,70 +74,16 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 			}
 			else if (label == "TextAlgorithmType")
 			{
-				std::string text;
-				float posX = 0.0f;
-				float posY = 0.0f;
-				int fontSize = 0;
-				std::string alignment;
-
-				fin >> text;
-				fin >> posX;
-				fin >> posY;
-				fin >> fontSize;
-				fin >> alignment;
-
-				CText::AlignType alignmentType = CText::AlignType::Left;
-
-				if (alignment == "Left")
-				{
-					alignmentType = CText::AlignType::Left;
-				}
-				else if (alignment == "Center")
-				{
-					alignmentType = CText::AlignType::Center;
-				}
-				else if (alignment == "Right")
-				{
-					alignmentType = CText::AlignType::Right;
-				}
-
 				m_algorithmDescription = m_entityManager.AddEntity("Text");
-				m_algorithmDescription->AddComponent<CTransform>(Vec2(posX, posY));
-				auto& textComponent = m_algorithmDescription->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), fontSize, sf::Color{ 255, 255, 255 }, alignmentType);
-				textComponent.text.setString("Algorithm: Seek");
+				Deserializer::DeserializeTransform(fin, m_algorithmDescription);
+				Deserializer::DeserializeText(fin, m_algorithmDescription, m_game->assets().GetFont("FontTech"));
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
 			}
 			else if (label == "Text")
 			{
-				std::string text;
-				float posX = 0.0f;
-				float posY = 0.0f;
-				int fontSize = 0;
-				std::string alignment;
-
-				fin >> text;
-				fin >> posX;
-				fin >> posY;
-				fin >> fontSize;
-				fin >> alignment;
-
-				CText::AlignType alignmentType = CText::AlignType::Left;
-
-				if (alignment == "Left")
-				{
-					alignmentType = CText::AlignType::Left;
-				}
-				else if (alignment == "Center")
-				{
-					alignmentType = CText::AlignType::Center;
-				}
-				else if (alignment == "Right")
-				{
-					alignmentType = CText::AlignType::Right;
-				}
-
-				auto textEntity = m_entityManager.AddEntity("Text");
-				textEntity->AddComponent<CTransform>(Vec2(posX, posY));
-				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), fontSize, sf::Color{ 255, 255, 255 }, alignmentType);
+				auto entity = m_entityManager.AddEntity("Text");
+				Deserializer::DeserializeTransform(fin, entity);
+				Deserializer::DeserializeText(fin, entity, m_game->assets().GetFont("FontTech"));
 			}
 		}
 
@@ -242,24 +197,12 @@ void SceneKinematic::SRenderer()
 
 		if (e->HasComponent<CAnimation>())
 		{
-			auto& animation = e->GetComponent<CAnimation>().animation;
-			animation.getSprite().setRotation(transform.Static.Orientation * (180.0f / M_PI));
-			animation.getSprite().setPosition(transform.Static.Position.x, transform.Static.Position.y);
-			animation.getSprite().setScale(transform.scale.x, transform.scale.y);
-			m_game->window().draw(animation.getSprite());
+			auto& Animation = e->GetComponent<CAnimation>().AnimationField;
+			Animation.getSprite().setRotation(transform.Static.Orientation * (180.0f / M_PI));
+			Animation.getSprite().setPosition(transform.Static.Position.x, transform.Static.Position.y);
+			Animation.getSprite().setScale(transform.Scale.x, transform.Scale.y);
+			m_game->window().draw(Animation.getSprite());
 		}
-	}
-
-	// draw text
-	for (auto e : m_entityManager.GetEntities())
-	{
-		if (!e->HasComponent<CText>()) continue;
-		if (!e->HasComponent<CTransform>()) continue;
-
-		const auto& transform = e->GetComponent<CTransform>();
-		auto& text = e->GetComponent<CText>().text;
-		text.setPosition(transform.Static.Position.x, transform.Static.Position.y);
-		m_game->window().draw(text);
 	}
 
 	// Draw Gizmos
@@ -337,6 +280,17 @@ void SceneKinematic::SRenderer()
 		}
 	}
 
+	// draw text
+	for (auto e : m_entityManager.GetEntities())
+	{
+		if (!e->HasComponent<CText>()) continue;
+		if (!e->HasComponent<CTransform>()) continue;
+
+		const auto& transform = e->GetComponent<CTransform>();
+		auto& text = e->GetComponent<CText>().text;
+		text.setPosition(transform.Static.Position.x, transform.Static.Position.y);
+		m_game->window().draw(text);
+	}
 
 	m_game->window().display();
 }
@@ -369,6 +323,7 @@ void SceneKinematic::SSeek()
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
 		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Seek(transform.Static, targetTransform.Static, aiSteering.MaxSpeed);
+		transform.Static.Orientation = KinematicMovementsAlgorithms::NewOrientation(transform.Static.Orientation, steering.Velocity);
 		KinematicMovementsAlgorithms::Update(transform.Static, steering);
 	}
 }
@@ -389,6 +344,7 @@ void SceneKinematic::SFlee()
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
 		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Flee(transform.Static, targetTransform.Static, aiSteering.MaxSpeed);
+		transform.Static.Orientation = KinematicMovementsAlgorithms::NewOrientation(transform.Static.Orientation, steering.Velocity);
 		KinematicMovementsAlgorithms::Update(transform.Static, steering);
 	}
 }
@@ -408,7 +364,8 @@ void SceneKinematic::SArrive()
 		if (!target->HasComponent<CTransform>()) continue;
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
-		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Arrive(transform.Static, targetTransform.Static, aiSteering.MaxSpeed, 20.0f, 0.25f);
+		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Arrive(transform.Static, targetTransform.Static, aiSteering.MaxSpeed, aiSteering.DistanceSlowRadius, 0.25f);
+		transform.Static.Orientation = KinematicMovementsAlgorithms::NewOrientation(transform.Static.Orientation, steering.Velocity);
 		KinematicMovementsAlgorithms::Update(transform.Static, steering);
 	}
 }
@@ -434,7 +391,7 @@ void SceneKinematic::OnEnd()
 
 Vec2 SceneKinematic::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)
 {
-	const Vec2& entitySize = entity->GetComponent<CAnimation>().animation.getSize();
+	const Vec2& entitySize = entity->GetComponent<CAnimation>().AnimationField.getSize();
 	Vec2 entityPosition = Vec2(gridX * m_gridSize.x, gridY * m_gridSize.y) + entitySize / 2;
 	entityPosition.y = m_game->window().getSize().y - entityPosition.y;
 	return entityPosition;

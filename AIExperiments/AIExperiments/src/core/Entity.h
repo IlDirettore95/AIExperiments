@@ -6,16 +6,10 @@
 
 typedef std::tuple<
 	CTransform,
-	CLifeSpan,
-	CInput,
-	CBoundingBox,
 	CAnimation,
-	CGravity,
-	CState,
 	CSteeringAI,
 	CText,
-	CFollowMouse,
-	CCircleShape
+	CFollowMouse
 > ComponentTuple;
 
 class Entity

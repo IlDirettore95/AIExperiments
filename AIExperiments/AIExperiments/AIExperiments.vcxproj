@@ -103,8 +103,8 @@
     <ClInclude Include="src\core\Entity.h" />
     <ClInclude Include="src\core\EntityManager.h" />
     <ClInclude Include="src\core\GameEngine.h" />
-    <ClInclude Include="src\core\Physics.h" />
     <ClInclude Include="src\core\Scene.h" />
+    <ClInclude Include="src\helpers\Deserializer.h" />
     <ClInclude Include="src\MovementAlgorithms.h" />
     <ClInclude Include="src\SceneKinematic.h" />
     <ClInclude Include="src\SceneMainMenu.h" />
@@ -120,8 +120,8 @@
     <ClCompile Include="src\core\EntityManager.cpp" />
     <ClCompile Include="src\core\GameEngine.cpp" />
     <ClCompile Include="src\core\Main.cpp" />
-    <ClCompile Include="src\core\Physics.cpp" />
     <ClCompile Include="src\core\Scene.cpp" />
+    <ClCompile Include="src\helpers\Deserializer.cpp" />
     <ClCompile Include="src\MovementAlgorithms.cpp" />
     <ClCompile Include="src\SceneKinematic.cpp" />
     <ClCompile Include="src\SceneMainMenu.cpp" />

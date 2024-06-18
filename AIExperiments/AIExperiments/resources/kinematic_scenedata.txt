@@ -1,4 +1,7 @@
 MovingTarget	
-AICharacter			AnimAICharacter			10		10
-Text				KINEMATIC_ALGORITHMS	640		100		36	Center
-TextAlgorithmType	AlgorithmType			1220	200		22	Right	
+AICharacter			300		300		AnimAICharacter			
+Text				640		100		KINEMATIC-ALGORITHMS			36	Center	255 255 255
+Text				1220	240		Press-G-(toggle-debug-draws)	18	Right	255 255 255
+Text				1220	270		Press-Esc-(go-to-MainMenu)		18	Right	255 255 255
+Text				1220	300		Press-Space-(switch-algorithm)	18	Right	255 255 255
+TextAlgorithmType	60		240		AlgorithmType					22	Left	100 200 0

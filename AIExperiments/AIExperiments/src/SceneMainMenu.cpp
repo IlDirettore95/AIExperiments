@@ -7,6 +7,7 @@
 #include "SceneSteering.h"
 #include <memory>
 #include <filesystem>
+#include "helpers/Deserializer.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -20,6 +21,7 @@ SceneMainMenu::SceneMainMenu(GameEngine* gameEngine, const std::string& levelPat
 		RegisterAction(sf::Keyboard::Numpad1, "KINEMATIC_ALGORITHMS");
 		RegisterAction(sf::Keyboard::Num2, "STEERING_ALGORITHMS");
 		RegisterAction(sf::Keyboard::Numpad2, "STEERING_ALGORITHMS");
+		RegisterAction(sf::Keyboard::Escape, "EXIT");
 	}
 
 	// Load Level
@@ -34,36 +36,9 @@ SceneMainMenu::SceneMainMenu(GameEngine* gameEngine, const std::string& levelPat
 		{
 			if (label == "Text")
 			{
-				std::string text;
-				float posX = 0.0f;
-				float posY = 0.0f;
-				int fontSize = 0;
-				std::string alignment;
-
-				fin >> text;
-				fin >> posX;
-				fin >> posY;
-				fin >> fontSize;
-				fin >> alignment;
-
-				CText::AlignType alignmentType = CText::AlignType::Left;
-
-				if (alignment == "Left")
-				{
-					alignmentType = CText::AlignType::Left;
-				}
-				else if (alignment == "Center")
-				{
-					alignmentType = CText::AlignType::Center;
-				}
-				else if (alignment == "Right")
-				{
-					alignmentType = CText::AlignType::Right;
-				}
-
-				auto textEntity = m_entityManager.AddEntity("Text");
-				textEntity->AddComponent<CTransform>(Vec2(posX, posY));
-				auto& textComponent = textEntity->AddComponent<CText>(text, m_game->assets().GetFont("FontTech"), fontSize, sf::Color{255, 255, 255}, alignmentType);
+				auto entity = m_entityManager.AddEntity("Text");
+				Deserializer::DeserializeTransform(fin, entity);
+				Deserializer::DeserializeText(fin, entity, m_game->assets().GetFont("FontTech"));
 			}
 		}
 
@@ -93,6 +68,10 @@ void SceneMainMenu::SDoAction(const Action& action)
 			std::string scenePath = (std::filesystem::current_path() / "resources" / "steering_scenedata.txt").string();
 			m_game->changeScene("STEERING_ALGORITHMS", std::make_shared<SceneSteering>(m_game, scenePath));
 		}
+		else if (action.Name() == "EXIT")
+		{
+			m_game->quit();
+		}
 	}
 	else if (action.Type() == "END")
 	{
@@ -102,6 +81,9 @@ void SceneMainMenu::SDoAction(const Action& action)
 
 void SceneMainMenu::SRenderer()
 {
+	// turn off cursor
+	m_game->window().setMouseCursorVisible(true);
+
 	// color the background darker so you know that the game is paused
 	if (!m_paused) { m_game->window().clear(sf::Color(20, 20, 60)); }
 	else { m_game->window().clear(sf::Color(0, 0, 30)); }
@@ -119,11 +101,11 @@ void SceneMainMenu::SRenderer()
 
 		if (e->HasComponent<CAnimation>())
 		{
-			auto& animation = e->GetComponent<CAnimation>().animation;
-			animation.getSprite().setRotation(transform.Static.Orientation * 180.0f / M_PI);
-			animation.getSprite().setPosition(transform.Static.Position.x, transform.Static.Position.y);
-			animation.getSprite().setScale(transform.scale.x, transform.scale.y);
-			m_game->window().draw(animation.getSprite());
+			auto& Animation = e->GetComponent<CAnimation>().AnimationField;
+			Animation.getSprite().setRotation(transform.Static.Orientation * 180.0f / M_PI);
+			Animation.getSprite().setPosition(transform.Static.Position.x, transform.Static.Position.y);
+			Animation.getSprite().setScale(transform.Scale.x, transform.Scale.y);
+			m_game->window().draw(Animation.getSprite());
 		}
 	}
 
@@ -150,7 +132,7 @@ Vec2 SceneMainMenu::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Ent
 {
 	if (entity->HasComponent<CAnimation>())
 	{
-		const Vec2& entitySize = entity->GetComponent<CAnimation>().animation.getSize();
+		const Vec2& entitySize = entity->GetComponent<CAnimation>().AnimationField.getSize();
 		Vec2 entityPosition = Vec2(gridX * m_gridSize.x, gridY * m_gridSize.y) + entitySize / 2;
 		entityPosition.y = m_game->window().getSize().y - entityPosition.y;
 		return entityPosition;

@@ -9,6 +9,8 @@ enum class SteeringAlgorithmType
 	Flee,
 	Arrive,
 	Wander,
+	Pursue,
+	Evade,
 	Max
 };
 
@@ -25,6 +27,8 @@ public:
 	void SFlee();
 	void SArrive();
 	void SWander();
+	void SPursue();
+	void SEvade();
 
 protected:
 	void OnEnd();
@@ -35,7 +39,8 @@ private:
 private:
 	const Vec2 m_gridSize = { 32, 32 };
 	std::shared_ptr<Entity> m_target = nullptr;
+	std::vector<Vec2> m_currentPath;
 	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
 	SteeringAlgorithmType m_algorithmType = SteeringAlgorithmType::Seek;
-	bool m_drawGizmos = true;
+	bool m_drawGizmos = false;
 };
