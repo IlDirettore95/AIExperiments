@@ -3,6 +3,7 @@
 #include "helpers/Vec2.h"
 #include "core/Components.h"
 #include "core/Scene.h"
+#include "helpers/Path.h"
 
 Vec2 OrientationAsVector(float currentOrientation);
 
@@ -60,4 +61,6 @@ namespace SteeringMovementsAlgorithms
 	SteeringOutput Pursue(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetStaticData, const DynamicData& targetDynamicData, const CSteeringAI& characterSteering);
 
 	SteeringOutput Evade(const StaticData& characterStaticData, const DynamicData& characterDynamicData, const StaticData& targetStaticData, const DynamicData& targetDynamicData, const CSteeringAI& characterSteering);
+
+	SteeringOutput PathFollowing(const StaticData& characterStaticData, const DynamicData& characterDynamicData, CSteeringAI& characterSteering, const Path& path);
 }

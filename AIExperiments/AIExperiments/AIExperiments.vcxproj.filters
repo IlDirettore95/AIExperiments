@@ -21,6 +21,7 @@
     <ClInclude Include="src\SceneMainMenu.h" />
     <ClInclude Include="src\SceneSteering.h" />
     <ClInclude Include="src\helpers\Deserializer.h" />
+    <ClInclude Include="src\helpers\Path.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\Action.cpp" />
@@ -56,6 +57,7 @@
     <ClCompile Include="src\SceneMainMenu.cpp" />
     <ClCompile Include="src\SceneSteering.cpp" />
     <ClCompile Include="src\helpers\Deserializer.cpp" />
+    <ClCompile Include="src\helpers\Path.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\kinematic_scenedata.txt" />

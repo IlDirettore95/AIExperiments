@@ -7,6 +7,7 @@ void GameEngine::init()
 	m_assets.LoadFromFile();
 	m_window.create(sf::VideoMode(1280, 768), "AIExperiments!");
 	m_window.setFramerateLimit(60);
+	m_window.setKeyRepeatEnabled(false);
 
 	std::string firstScenePath = (std::filesystem::current_path() / "resources" / "main_menu_scenedata.txt").string();
 	changeScene("MAIN_MENU", std::make_shared<SceneMainMenu>(this, firstScenePath));

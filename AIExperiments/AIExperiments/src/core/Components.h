@@ -125,11 +125,16 @@ public:
 	float DistanceTargetRadius = 1.0f;
 	float OrientationSlowRadius = 1.0f;
 	float OrientationTargetRadius = 1.0f;
+	// Wander
 	float WanderOffset = 1.0f;
 	float WanderRadius = 1.0f;
 	float WanderRate = 1.0f;
 	float WanderOrientation = 0.0f;
+	// Pursue/Evade
 	float MaxPreditionTime = 1.0f;
+	// PathFollowing
+	float PathOffset = 1.0f;
+	float CurrentParam = 0.0f;
 
 	CSteeringAI() {}
 	CSteeringAI(const CSteeringAI& steeringComponent)
@@ -148,6 +153,8 @@ public:
 		WanderRate				= steeringComponent.WanderRate;
 		WanderOrientation		= steeringComponent.WanderOrientation;
 		MaxPreditionTime		= steeringComponent.MaxPreditionTime;
+		PathOffset				= steeringComponent.PathOffset;
+		CurrentParam			= steeringComponent.CurrentParam;
 	}
 };
 
@@ -160,5 +167,17 @@ public:
 	CFollowMouse(const CFollowMouse& followMouseComponent)
 	{
 		debugCircle = followMouseComponent.debugCircle;
+	}
+};
+
+class CWaypoint : public Component
+{
+public:
+	sf::CircleShape debugCircle;
+
+	CWaypoint() {}
+	CWaypoint(const CWaypoint& waypointComponent)
+	{
+		debugCircle = waypointComponent.debugCircle;
 	}
 };

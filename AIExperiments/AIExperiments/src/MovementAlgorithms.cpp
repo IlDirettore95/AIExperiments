@@ -299,4 +299,28 @@ namespace SteeringMovementsAlgorithms
 		result.Linear *= -1;
 		return result;
 	}
+
+	SteeringOutput PathFollowing(const StaticData& characterStaticData, const DynamicData& characterDynamicData, CSteeringAI& characterSteering, const Path& path)
+	{
+		if (path.Waypoints.size() <= 1) return SteeringOutput();
+
+		characterSteering.CurrentParam = path.GetParameter(characterStaticData.Position, characterSteering.CurrentParam);
+
+		float targetParam = characterSteering.CurrentParam + characterSteering.PathOffset;
+
+		if (path.Looped && targetParam > path.Length) targetParam -= path.Length;
+		else if (!path.Looped && targetParam > path.Length) targetParam = path.Length;
+		
+		StaticData targetData;
+		targetData.Position = path.GetPosition(targetParam);
+
+		if (!path.Looped && targetData.Position == path.Waypoints[path.Waypoints.size() - 1])
+		{
+			return Arrive(characterStaticData, characterDynamicData, targetData, characterSteering);
+		}
+		else
+		{
+			return Seek(characterStaticData, targetData, characterSteering);
+		}
+	}
 }

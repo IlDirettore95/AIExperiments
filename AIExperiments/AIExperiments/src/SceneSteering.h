@@ -2,8 +2,9 @@
 
 #include "core/Scene.h"
 #include <math.h>
+#include "helpers/Path.h"
 
-enum class SteeringAlgorithmType
+enum class ESteeringAlgorithmType
 {
 	Seek,
 	Flee,
@@ -11,6 +12,7 @@ enum class SteeringAlgorithmType
 	Wander,
 	Pursue,
 	Evade,
+	PathFollowing,
 	Max
 };
 
@@ -29,18 +31,21 @@ public:
 	void SWander();
 	void SPursue();
 	void SEvade();
+	void SPathFollowing();
 
 protected:
 	void OnEnd();
 
 private:
+	void SpawnWaypoint(const Vec2& position);
 	Vec2 GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity);
 
 private:
 	const Vec2 m_gridSize = { 32, 32 };
 	std::shared_ptr<Entity> m_target = nullptr;
-	std::vector<Vec2> m_currentPath;
+	Path m_currentPath;
 	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
-	SteeringAlgorithmType m_algorithmType = SteeringAlgorithmType::Seek;
+	ESteeringAlgorithmType m_algorithmType = ESteeringAlgorithmType::Seek;
 	bool m_drawGizmos = false;
+	bool m_followPath = false;
 };

@@ -88,11 +88,6 @@ Vec2& Vec2::Scale(const float a)
 	return *this;
 }
 	
-float Vec2::Distance(const Vec2& v) const
-{
-	return sqrtf(powf(x - v.x, 2) + powf(y - v.y, 2));
-}
-	
 float Vec2::Magnitude() const
 {
 	return sqrtf(powf(x,2) + powf(y,2));
@@ -106,9 +101,29 @@ Vec2 Vec2::Normalize() const
 	return Vec2(x / magnitude, y / magnitude);
 }
 
+float Vec2::Distance(const Vec2& v1, const Vec2& v2)
+{
+	return sqrtf(powf(v1.x - v2.x, 2) + powf(v1.y - v2.y, 2));
+}
+
+float Vec2::DistanceSquared(const Vec2& v1, const Vec2& v2)
+{
+	return powf(v1.x - v2.x, 2) + powf(v1.y - v2.y, 2);
+}
+
+float Vec2::Dot(const Vec2& v1, const Vec2& v2)
+{
+	return v1.x * v2.x + v1.y * v2.y;
+}
+
+float Vec2::Cross(const Vec2& v1, const Vec2& v2)
+{
+	return v1.x * v2.y - v1.y * v2.x;
+}
+
 void Vec2::Print() const
 {
-	std::cout << x << ", " << y << std::endl;
+	std::cout << ToString() << std::endl;
 }
 
 std::string Vec2::ToString() const

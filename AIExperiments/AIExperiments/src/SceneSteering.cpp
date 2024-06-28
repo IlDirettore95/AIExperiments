@@ -23,6 +23,10 @@ SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPat
 		RegisterAction(sf::Keyboard::Escape, "BACK_TO_MAIN_MENU");
 		RegisterAction(sf::Keyboard::Space, "SWITCH_ALGORITHM");
 		RegisterAction(sf::Keyboard::G, "TOGGLE_GIZMOS");
+		RegisterAction(sf::Keyboard::Q, "ADD_WAYPOINT");
+		RegisterAction(sf::Keyboard::W, "FOLLOW_PATH");
+		RegisterAction(sf::Keyboard::E, "EREASE_PATH");
+		RegisterAction(sf::Keyboard::R, "LOOP_PATH");
 	}
 
 	// Load Level
@@ -60,6 +64,8 @@ SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPat
 				aiSteering.WanderRate = 0.5f;
 				aiSteering.WanderOrientation = 0.0f;
 				aiSteering.MaxPreditionTime = 60.0f;
+				aiSteering.PathOffset = 50.0f;
+				aiSteering.CurrentParam = 0.0f;
 			}
 			else if (label == "MovingTarget")
 			{
@@ -71,7 +77,7 @@ SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPat
 			    followMouseComponent.debugCircle.setFillColor(sf::Color::White);
 				followMouseComponent.debugCircle.setOutlineColor(sf::Color::White);
 				followMouseComponent.debugCircle.setOutlineThickness(1.0f);
-				followMouseComponent.debugCircle.setOrigin(5.0f, 5.0f);
+				followMouseComponent.debugCircle.setOrigin(followMouseComponent.debugCircle.getRadius(), followMouseComponent.debugCircle.getRadius());
 			}
 			else if (label == "TextAlgorithmType")
 			{
@@ -99,39 +105,43 @@ void SceneSteering::Update()
 
 	switch (m_algorithmType)
 	{
-		case SteeringAlgorithmType::Seek:
-		{
-			SSeek();
-			break;
-		}
+	case ESteeringAlgorithmType::Seek:
+	{
+		SSeek();
+		break;
+	}
+	case ESteeringAlgorithmType::Flee:
+	{
+		SFlee();
+		break;
+	}
 
-		case SteeringAlgorithmType::Flee:
-		{
-			SFlee();
-			break;
-		}
+	case ESteeringAlgorithmType::Arrive:
+	{
+		SArrive();
+		break;
+	}
 
-		case SteeringAlgorithmType::Arrive:
-		{
-			SArrive();
-			break;
-		}
-
-		case SteeringAlgorithmType::Wander:
-		{
-			SWander();
-			break;
-		}
-		case SteeringAlgorithmType::Pursue:
-		{
-			SPursue();
-			break;
-		}
-		case SteeringAlgorithmType::Evade:
-		{
-			SEvade();
-			break;
-		}
+	case ESteeringAlgorithmType::Wander:
+	{
+		SWander();
+		break;
+	}
+	case ESteeringAlgorithmType::Pursue:
+	{
+		SPursue();
+		break;
+	}
+	case ESteeringAlgorithmType::Evade:
+	{
+		SEvade();
+		break;
+	}
+	case ESteeringAlgorithmType::PathFollowing:
+	{
+		SPathFollowing();
+		break;
+	}
 	}
 
 	SRenderer();
@@ -150,49 +160,153 @@ void SceneSteering::SDoAction(const Action& action)
 		}
 		else if (action.Name() == "SWITCH_ALGORITHM")
 		{
-			m_algorithmType = (SteeringAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)SteeringAlgorithmType::Max));
+			ESteeringAlgorithmType oldAlgorithmType = m_algorithmType;
+			// Exit actions
 			switch (m_algorithmType)
 			{
-				case SteeringAlgorithmType::Seek:
-				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
-					break;
-				}
+			case ESteeringAlgorithmType::Seek:
+			{
+				break;
+			}
 
-				case SteeringAlgorithmType::Flee:
-				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
-					break;
-				}
+			case ESteeringAlgorithmType::Flee:
+			{
+				break;
+			}
 
-				case SteeringAlgorithmType::Arrive:
-				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
-					break;
-				}
+			case ESteeringAlgorithmType::Arrive:
+			{
+				break;
+			}
 
-				case SteeringAlgorithmType::Wander:
-				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
-					break;
-				}
+			case ESteeringAlgorithmType::Wander:
+			{
+				break;
+			}
 
-				case SteeringAlgorithmType::Pursue:
-				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Pursue");
-					break;
-				}
+			case ESteeringAlgorithmType::Pursue:
+			{
+				break;
+			}
 
-				case SteeringAlgorithmType::Evade:
+			case ESteeringAlgorithmType::Evade:
+			{
+				break;
+			}
+
+			case ESteeringAlgorithmType::PathFollowing:
+			{
+				for (auto& waypoint : m_entityManager.GetEntities("Waypoint"))
 				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Evade");
-					break;
+					waypoint->destroy();
 				}
+				for (auto& e : m_entityManager.GetEntities())
+				{
+					if (!e->HasComponent<CSteeringAI>()) continue;
+
+					auto& steeringAI = e->GetComponent<CSteeringAI>();
+					steeringAI.CurrentParam = 0.0f;
+				}
+				m_currentPath.Clear();
+				m_followPath = false;
+
+				break;
+			}
+			}
+
+			m_algorithmType = (ESteeringAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)ESteeringAlgorithmType::Max));
+
+			// Enter actions
+			switch (m_algorithmType)
+			{
+			case ESteeringAlgorithmType::Seek:
+			{
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+				break;
+			}
+
+			case ESteeringAlgorithmType::Flee:
+			{
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
+				break;
+			}
+
+			case ESteeringAlgorithmType::Arrive:
+			{
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
+				break;
+			}
+
+			case ESteeringAlgorithmType::Wander:
+			{
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
+				break;
+			}
+
+			case ESteeringAlgorithmType::Pursue:
+			{
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Pursue");
+				break;
+			}
+
+			case ESteeringAlgorithmType::Evade:
+			{
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Evade");
+				break;
+			}
+			case ESteeringAlgorithmType::PathFollowing:
+			{
+				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: PathFollowing");
+				break;
+
+			}
 			}
 		}
 		else if (action.Name() == "TOGGLE_GIZMOS")
 		{
 			m_drawGizmos = !m_drawGizmos;
+		}
+		else if (action.Name() == "ADD_WAYPOINT")
+		{
+			if (m_algorithmType == ESteeringAlgorithmType::PathFollowing)
+			{
+				auto& targetTransform = m_target->GetComponent<CTransform>();
+				SpawnWaypoint(targetTransform.Static.Position);
+				m_followPath = false;
+			}
+		}
+		else if (action.Name() == "FOLLOW_PATH")
+		{
+			if (m_algorithmType == ESteeringAlgorithmType::PathFollowing)
+			{
+				m_followPath = true;
+			}
+		}
+		else if (action.Name() == "EREASE_PATH")
+		{
+			if (m_algorithmType == ESteeringAlgorithmType::PathFollowing)
+			{
+				for (auto& waypoint : m_entityManager.GetEntities("Waypoint"))
+				{
+					waypoint->destroy();
+				}
+				for (auto& e : m_entityManager.GetEntities())
+				{
+					if (!e->HasComponent<CSteeringAI>()) continue;
+
+					auto& steeringAI = e->GetComponent<CSteeringAI>();
+					steeringAI.CurrentParam = 0.0f;
+				}
+				m_currentPath.Clear();
+				m_followPath = false;
+			}
+		}
+		else if (action.Name() == "LOOP_PATH")
+		{
+			if (m_algorithmType == ESteeringAlgorithmType::PathFollowing)
+			{
+				m_currentPath.Looped = !m_currentPath.Looped;
+			}
 		}
 	}
 	else if (action.Type() == "END")
@@ -216,7 +330,7 @@ void SceneSteering::SRenderer()
 	view.setCenter(windowCenterX, m_game->window().getSize().y - view.getCenter().y);
 	m_game->window().setView(view);
 
-	// draw textures
+	// Draw Textures
 	for (auto e : m_entityManager.GetEntities())
 	{
 		auto& transform = e->GetComponent<CTransform>();
@@ -232,7 +346,7 @@ void SceneSteering::SRenderer()
 		}
 	}
 
-	// draw text
+	// Draw Text
 	for (auto e : m_entityManager.GetEntities())
 	{
 		if (!e->HasComponent<CText>()) continue;
@@ -242,6 +356,18 @@ void SceneSteering::SRenderer()
 		auto& text = e->GetComponent<CText>().text;
 		text.setPosition(transform.Static.Position.x, transform.Static.Position.y);
 		m_game->window().draw(text);
+	}
+
+	// Draw Waypoints
+	for (auto e : m_entityManager.GetEntities("Waypoint"))
+	{
+		if (!e->HasComponent<CWaypoint>()) continue;
+		if (!e->HasComponent<CTransform>()) continue;
+
+		auto& waypointComponent = e->GetComponent<CWaypoint>();
+		auto& transform = e->GetComponent<CTransform>();
+		waypointComponent.debugCircle.setPosition(transform.Static.Position.x, transform.Static.Position.y);
+		m_game->window().draw(waypointComponent.debugCircle);
 	}
 
 	// Draw Gizmos
@@ -271,6 +397,7 @@ void SceneSteering::SRenderer()
 					auto& steeringAI = e->GetComponent<CSteeringAI>();
 					auto& transformAI = e->GetComponent<CTransform>();
 
+					if (steeringAI.EntityID == UINT64_MAX) break;
 					auto otherE = m_entityManager.GetEntity(steeringAI.EntityID);
 					if (e == otherE) continue;
 					if (!e->HasComponent<CTransform>()) continue;
@@ -278,115 +405,138 @@ void SceneSteering::SRenderer()
 
 					switch (m_algorithmType)
 					{
-						case SteeringAlgorithmType::Seek:
-						{
-							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
-							break;
-						}
-
-						case SteeringAlgorithmType::Flee:
-						{
-							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
-							break;
-						}
-
-						case SteeringAlgorithmType::Arrive:
-						{
-							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
-
-							sf::CircleShape slowRadiusShape(steeringAI.DistanceSlowRadius, 40);
-							slowRadiusShape.setFillColor(sf::Color::Transparent);
-							slowRadiusShape.setOutlineColor(sf::Color::Green);
-							slowRadiusShape.setOutlineThickness(1.0f);
-							slowRadiusShape.setOrigin(steeringAI.DistanceSlowRadius, steeringAI.DistanceSlowRadius);
-							slowRadiusShape.setPosition(targetTransform.Static.Position.x, targetTransform.Static.Position.y);
-							m_game->window().draw(slowRadiusShape);
-							break;
-						}
-
-						case SteeringAlgorithmType::Wander:
-						{
-							Vec2 wanderCirclePosition = transformAI.Static.Position + OrientationAsVector(transformAI.Static.Orientation) * steeringAI.WanderOffset;
-
-							sf::CircleShape wanderCircleShape(steeringAI.WanderRadius, 40);
-							wanderCircleShape.setFillColor(sf::Color::Transparent);
-							wanderCircleShape.setOutlineColor(sf::Color::Magenta);
-							wanderCircleShape.setOutlineThickness(1.0f);
-							wanderCircleShape.setOrigin(steeringAI.WanderRadius, steeringAI.WanderRadius);
-							wanderCircleShape.setPosition(wanderCirclePosition.x, wanderCirclePosition.y);
-
-							float wanderTargetOrientation = steeringAI.WanderOrientation + transformAI.Static.Orientation;
-							Vec2 wanderTargetPosition = transformAI.Static.Position + OrientationAsVector(transformAI.Static.Orientation) * steeringAI.WanderOffset;
-							wanderTargetPosition += OrientationAsVector(wanderTargetOrientation) * steeringAI.WanderRadius;
-
-							sf::CircleShape wanderTargetShape(5.0f, 40);
-							wanderTargetShape.setFillColor(sf::Color::Red);
-							wanderTargetShape.setOutlineColor(sf::Color::Red);
-							wanderTargetShape.setOutlineThickness(1.0f);
-							wanderTargetShape.setOrigin(5.0f, 5.0f);
-							wanderTargetShape.setPosition(wanderTargetPosition.x, wanderTargetPosition.y);
-
-							DrawLine(transform.Static.Position, wanderTargetPosition, Color(1.0f, 0.0f, 1.0f));
-
-							m_game->window().draw(wanderCircleShape);
-							m_game->window().draw(wanderTargetShape);
-							break;
-						}
-
-						case SteeringAlgorithmType::Pursue:
-						{
-							Vec2 direction = targetTransform.Static.Position - transform.Static.Position;
-							float distance = direction.Magnitude();
-							float speed = transform.Dynamic.Velocity.Magnitude();
-							float prediction = 0.0f;
-
-							if (speed <= distance / steeringAI.MaxPreditionTime)
-							{
-								prediction = steeringAI.MaxPreditionTime;
-							}
-							else
-							{
-								prediction = distance / speed;
-							}
-
-							StaticData explicitTarget = targetTransform.Static;
-							explicitTarget.Position += targetTransform.Dynamic.Velocity * prediction;
-							explicitTarget.Orientation = 0.0f;
-
-							DrawLine(transform.Static.Position, explicitTarget.Position, Color(1.0f, 0.0f, 0.0f));
-							break;
-						}
-
-						case SteeringAlgorithmType::Evade:
-						{
-							Vec2 direction = transform.Static.Position - targetTransform.Static.Position;
-							float distance = direction.Magnitude();
-							float speed = transform.Dynamic.Velocity.Magnitude();
-							float prediction = 0.0f;
-
-							if (speed <= distance / steeringAI.MaxPreditionTime)
-							{
-								prediction = steeringAI.MaxPreditionTime;
-							}
-							else
-							{
-								prediction = distance / speed;
-							}
-
-							StaticData explicitTarget = targetTransform.Static;
-							explicitTarget.Position += targetTransform.Dynamic.Velocity * prediction;
-							explicitTarget.Orientation = 0.0f;
-
-							DrawLine(transform.Static.Position, explicitTarget.Position, Color(1.0f, 0.0f, 0.0f));
-							break;
-						}
+					case ESteeringAlgorithmType::Seek:
+					{
+						DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
+						break;
 					}
 
+					case ESteeringAlgorithmType::Flee:
+					{
+						DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
+						break;
+					}
+
+					case ESteeringAlgorithmType::Arrive:
+					{
+						DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
+
+						sf::CircleShape slowRadiusShape(steeringAI.DistanceSlowRadius, 40);
+						slowRadiusShape.setFillColor(sf::Color::Transparent);
+						slowRadiusShape.setOutlineColor(sf::Color::Green);
+						slowRadiusShape.setOutlineThickness(1.0f);
+						slowRadiusShape.setOrigin(steeringAI.DistanceSlowRadius, steeringAI.DistanceSlowRadius);
+						slowRadiusShape.setPosition(targetTransform.Static.Position.x, targetTransform.Static.Position.y);
+						m_game->window().draw(slowRadiusShape);
+						break;
+					}
+
+					case ESteeringAlgorithmType::Wander:
+					{
+						Vec2 wanderCirclePosition = transformAI.Static.Position + OrientationAsVector(transformAI.Static.Orientation) * steeringAI.WanderOffset;
+
+						sf::CircleShape wanderCircleShape(steeringAI.WanderRadius, 40);
+						wanderCircleShape.setFillColor(sf::Color::Transparent);
+						wanderCircleShape.setOutlineColor(sf::Color::Magenta);
+						wanderCircleShape.setOutlineThickness(1.0f);
+						wanderCircleShape.setOrigin(steeringAI.WanderRadius, steeringAI.WanderRadius);
+						wanderCircleShape.setPosition(wanderCirclePosition.x, wanderCirclePosition.y);
+
+						float wanderTargetOrientation = steeringAI.WanderOrientation + transformAI.Static.Orientation;
+						Vec2 wanderTargetPosition = transformAI.Static.Position + OrientationAsVector(transformAI.Static.Orientation) * steeringAI.WanderOffset;
+						wanderTargetPosition += OrientationAsVector(wanderTargetOrientation) * steeringAI.WanderRadius;
+
+						sf::CircleShape wanderTargetShape(5.0f, 40);
+						wanderTargetShape.setFillColor(sf::Color::Red);
+						wanderTargetShape.setOutlineColor(sf::Color::Red);
+						wanderTargetShape.setOutlineThickness(1.0f);
+						wanderTargetShape.setOrigin(5.0f, 5.0f);
+						wanderTargetShape.setPosition(wanderTargetPosition.x, wanderTargetPosition.y);
+
+						DrawLine(transform.Static.Position, wanderTargetPosition, Color(1.0f, 0.0f, 1.0f));
+
+						m_game->window().draw(wanderCircleShape);
+						m_game->window().draw(wanderTargetShape);
+						break;
+					}
+
+					case ESteeringAlgorithmType::Pursue:
+					{
+						Vec2 direction = targetTransform.Static.Position - transform.Static.Position;
+						float distance = direction.Magnitude();
+						float speed = transform.Dynamic.Velocity.Magnitude();
+						float prediction = 0.0f;
+
+						if (speed <= distance / steeringAI.MaxPreditionTime)
+						{
+							prediction = steeringAI.MaxPreditionTime;
+						}
+						else
+						{
+							prediction = distance / speed;
+						}
+
+						StaticData explicitTarget = targetTransform.Static;
+						explicitTarget.Position += targetTransform.Dynamic.Velocity * prediction;
+						explicitTarget.Orientation = 0.0f;
+
+						DrawLine(transform.Static.Position, explicitTarget.Position, Color(1.0f, 0.0f, 0.0f));
+						break;
+					}
+
+					case ESteeringAlgorithmType::Evade:
+					{
+						Vec2 direction = transform.Static.Position - targetTransform.Static.Position;
+						float distance = direction.Magnitude();
+						float speed = transform.Dynamic.Velocity.Magnitude();
+						float prediction = 0.0f;
+
+						if (speed <= distance / steeringAI.MaxPreditionTime)
+						{
+							prediction = steeringAI.MaxPreditionTime;
+						}
+						else
+						{
+							prediction = distance / speed;
+						}
+
+						StaticData explicitTarget = targetTransform.Static;
+						explicitTarget.Position += targetTransform.Dynamic.Velocity * prediction;
+						explicitTarget.Orientation = 0.0f;
+
+						DrawLine(transform.Static.Position, explicitTarget.Position, Color(1.0f, 0.0f, 0.0f));
+						break;
+					}
+					case ESteeringAlgorithmType::PathFollowing:
+					{
+						if (m_currentPath.Waypoints.size() <= 0) continue;
+						DrawCircle(m_currentPath.GetPosition(steeringAI.CurrentParam), 2.0f, 10, Color(1.0f, 0.0f, 0.0f), Color(1.0f, 0.0f, 0.0f), 1.0f);
+
+						float targetParam = steeringAI.CurrentParam + steeringAI.PathOffset;
+						if (m_currentPath.Looped && targetParam > m_currentPath.Length) targetParam -= m_currentPath.Length;
+						else if (!m_currentPath.Looped && targetParam > m_currentPath.Length) targetParam = m_currentPath.Length;
+
+						DrawCircle(m_currentPath.GetPosition(targetParam), 7.0f, 10, Color(1.0f, 0.0f, 0.0f), Color(1.0f, 0.0f, 0.0f), 1.0f);
+						break;
+					}
+					}
 
 					DrawLine(transform.Static.Position, transform.Static.Position + OrientationAsVector(transform.Static.Orientation).Normalize() * 50.0f, Color(1.0f, 1.0f, 0.0f));
 					DrawLine(transform.Static.Position, transform.Static.Position + transform.Dynamic.Velocity.Normalize() * 50.0f, Color(0.5f, 0.5f, 0.5f));
 				}
 			}
+		}
+
+		// Waypoints gizmos
+		for (int i = 0; i < (int64_t)m_currentPath.Waypoints.size() - 1; i++)
+		{
+			const Vec2& start = m_currentPath.Waypoints.at(i);
+			const Vec2& end = m_currentPath.Waypoints.at(i + 1);
+			DrawLine(start, end, Color(0.8f, 0.2f, 0.8f));
+		}
+		if (m_currentPath.Waypoints.size() > 1 && m_currentPath.Looped)
+		{
+			DrawLine(m_currentPath.Waypoints.at(m_currentPath.Waypoints.size() - 1), m_currentPath.Waypoints.at(0), Color(0.8f, 0.2f, 0.8f));
 		}
 	}
 
@@ -415,17 +565,18 @@ void SceneSteering::SSeek()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& steeringAI = e->GetComponent<CSteeringAI>();
 
-		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (steeringAI.EntityID == UINT64_MAX) break;
+		auto target = m_entityManager.GetEntity(steeringAI.EntityID);
 		if (!target && target == e) continue;
 		if (!target->HasComponent<CTransform>()) continue;
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
 		SteeringMovementsAlgorithms::SteeringOutput steering;
-		steering.Linear = SteeringMovementsAlgorithms::Seek(transform.Static, targetTransform.Static, aiSteering).Linear;
-		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, aiSteering).Angular;
-		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, aiSteering);
+		steering.Linear = SteeringMovementsAlgorithms::Seek(transform.Static, targetTransform.Static, steeringAI).Linear;
+		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, steeringAI).Angular;
+		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, steeringAI);
 	}
 }
 
@@ -437,17 +588,18 @@ void SceneSteering::SFlee()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& steeringAI = e->GetComponent<CSteeringAI>();
 
-		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (steeringAI.EntityID == UINT64_MAX) break;
+		auto target = m_entityManager.GetEntity(steeringAI.EntityID);
 		if (!target && target == e) continue;
 		if (!target->HasComponent<CTransform>()) continue;
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
 		SteeringMovementsAlgorithms::SteeringOutput steering;
-		steering.Linear = SteeringMovementsAlgorithms::Flee(transform.Static, targetTransform.Static, aiSteering).Linear;
-		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, aiSteering).Angular;
-		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, aiSteering);
+		steering.Linear = SteeringMovementsAlgorithms::Flee(transform.Static, targetTransform.Static, steeringAI).Linear;
+		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, steeringAI).Angular;
+		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, steeringAI);
 	}
 }
 
@@ -459,17 +611,18 @@ void SceneSteering::SArrive()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& steeringAI = e->GetComponent<CSteeringAI>();
 
-		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (steeringAI.EntityID == UINT64_MAX) break;
+		auto target = m_entityManager.GetEntity(steeringAI.EntityID);
 		if (!target && target == e) continue;
 		if (!target->HasComponent<CTransform>()) continue;
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
 		SteeringMovementsAlgorithms::SteeringOutput steering;
-		steering.Linear = SteeringMovementsAlgorithms::Arrive(transform.Static, transform.Dynamic, targetTransform.Static, aiSteering).Linear;
-		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, aiSteering).Angular;
-		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, aiSteering);
+		steering.Linear = SteeringMovementsAlgorithms::Arrive(transform.Static, transform.Dynamic, targetTransform.Static, steeringAI).Linear;
+		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, steeringAI).Angular;
+		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, steeringAI);
 	}
 }
 
@@ -496,17 +649,18 @@ void SceneSteering::SPursue()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& steeringAI = e->GetComponent<CSteeringAI>();
 
-		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (steeringAI.EntityID == UINT64_MAX) break;
+		auto target = m_entityManager.GetEntity(steeringAI.EntityID);
 		if (!target && target == e) continue;
 		if (!target->HasComponent<CTransform>()) continue;
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
 		SteeringMovementsAlgorithms::SteeringOutput steering;
-		steering.Linear = SteeringMovementsAlgorithms::Pursue(transform.Static, transform.Dynamic, targetTransform.Static, targetTransform.Dynamic, aiSteering).Linear;
-		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, aiSteering).Angular;
-		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, aiSteering);
+		steering.Linear = SteeringMovementsAlgorithms::Pursue(transform.Static, transform.Dynamic, targetTransform.Static, targetTransform.Dynamic, steeringAI).Linear;
+		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, steeringAI).Angular;
+		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, steeringAI);
 	}
 }
 
@@ -518,23 +672,58 @@ void SceneSteering::SEvade()
 		if (!e->HasComponent<CSteeringAI>()) continue;
 
 		CTransform& transform = e->GetComponent<CTransform>();
-		const CSteeringAI& aiSteering = e->GetComponent<CSteeringAI>();
+		const CSteeringAI& steeringAI = e->GetComponent<CSteeringAI>();
 
-		auto target = m_entityManager.GetEntity(aiSteering.EntityID);
+		if (steeringAI.EntityID == UINT64_MAX) break;
+		auto target = m_entityManager.GetEntity(steeringAI.EntityID);
 		if (!target && target == e) continue;
 		if (!target->HasComponent<CTransform>()) continue;
 		const CTransform& targetTransform = target->GetComponent<CTransform>();
 
 		SteeringMovementsAlgorithms::SteeringOutput steering;
-		steering.Linear = SteeringMovementsAlgorithms::Evade(transform.Static, transform.Dynamic, targetTransform.Static, targetTransform.Dynamic, aiSteering).Linear;
-		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, aiSteering).Angular;
-		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, aiSteering);
+		steering.Linear = SteeringMovementsAlgorithms::Evade(transform.Static, transform.Dynamic, targetTransform.Static, targetTransform.Dynamic, steeringAI).Linear;
+		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, steeringAI).Angular;
+		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, steeringAI);
+	}
+}
+
+void SceneSteering::SPathFollowing()
+{
+	if (!m_followPath) return;
+
+	for (auto e : m_entityManager.GetEntities())
+	{
+		if (!e->HasComponent<CTransform>()) continue;
+		if (!e->HasComponent<CSteeringAI>()) continue;
+
+		CTransform& transform = e->GetComponent<CTransform>();
+		CSteeringAI& steeringAI = e->GetComponent<CSteeringAI>();
+
+		SteeringMovementsAlgorithms::SteeringOutput steering;
+		steering.Linear = SteeringMovementsAlgorithms::PathFollowing(transform.Static, transform.Dynamic, steeringAI, m_currentPath).Linear;
+		steering.Angular = SteeringMovementsAlgorithms::LookWhereYouAreGoing(transform.Static, transform.Dynamic, steeringAI).Angular;
+		SteeringMovementsAlgorithms::Update(transform.Static, transform.Dynamic, steering, steeringAI);
 	}
 }
 
 
 void SceneSteering::OnEnd()
 {
+}
+
+void SceneSteering::SpawnWaypoint(const Vec2& position)
+{
+	auto waypoint = m_entityManager.AddEntity("Waypoint");
+	waypoint->AddComponent<CTransform>(position);
+	auto& waypointComponent = waypoint->AddComponent<CWaypoint>();
+	waypointComponent.debugCircle.setRadius(10.0f);
+	waypointComponent.debugCircle.setPointCount(20);
+	waypointComponent.debugCircle.setFillColor(sf::Color::Transparent);
+	waypointComponent.debugCircle.setOutlineColor(sf::Color::Magenta);
+	waypointComponent.debugCircle.setOutlineThickness(1.0f);
+	waypointComponent.debugCircle.setOrigin(waypointComponent.debugCircle.getRadius(), waypointComponent.debugCircle.getRadius());
+
+	m_currentPath.AddWayPoint(position);
 }
 
 Vec2 SceneSteering::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)

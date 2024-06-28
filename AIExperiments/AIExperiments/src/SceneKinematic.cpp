@@ -59,6 +59,8 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 				aiSteering.WanderRate = 0.0f;
 				aiSteering.WanderOrientation = 0.0f;
 				aiSteering.MaxPreditionTime = 0.0f;
+				aiSteering.PathOffset = 0.0f;
+				aiSteering.CurrentParam = 0.0f;
 			}
 			else if (label == "MovingTarget")
 			{

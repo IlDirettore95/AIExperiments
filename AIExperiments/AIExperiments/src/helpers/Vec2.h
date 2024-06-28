@@ -31,10 +31,13 @@ public:
 	Vec2& Substract(const Vec2& v);
 	Vec2& Scale(const float a);
 
-	float Distance(const Vec2& v) const;
 	float Magnitude() const;
-
 	Vec2 Normalize() const;
+
+	static float Distance(const Vec2& v1, const Vec2& v2);
+	static float DistanceSquared(const Vec2& v1, const Vec2& v2);
+	static float Dot(const Vec2& v1, const Vec2& v2);
+	static float Cross(const Vec2& v1, const Vec2& v2);
 
 	void Print() const;
 	std::string ToString() const;
