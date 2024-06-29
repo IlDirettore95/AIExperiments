@@ -18,6 +18,7 @@ public:
 	SceneKinematic(GameEngine* gameEngine, const std::string& levelPath);
 	void Update();
 	void SDoAction(const Action& action);
+	void SGui();
 	void SRenderer();
 
 	void STargetMovement();
@@ -35,7 +36,9 @@ private:
 private:
 	const Vec2 m_gridSize = { 32, 32 };
 	std::shared_ptr<Entity> m_target = nullptr;
+	std::shared_ptr<Entity> m_algorithmTypeDescription = nullptr;
 	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
 	KinematicAlgorithmType m_algorithmType = KinematicAlgorithmType::Seek;
 	bool m_drawGizmos = false;
+	sf::Clock m_deltaClock;
 };

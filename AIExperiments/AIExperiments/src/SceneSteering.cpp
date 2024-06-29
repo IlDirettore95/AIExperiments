@@ -11,6 +11,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "helpers/Deserializer.h"
+#include <imgui-SFML.h>
+#include <imgui.h>
 
 SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPath)
 	: Scene(gameEngine)
@@ -41,15 +43,15 @@ SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPat
 		{
 			if (label == "AICharacter")
 			{
-				auto entity = m_entityManager.AddEntity("AICharacter");
-				Deserializer::DeserializeTransform(fin, entity);
+				m_ai = m_entityManager.AddEntity("AICharacter");
+				Deserializer::DeserializeTransform(fin, m_ai);
 				
 				std::string animationName;
 				fin >> animationName;
 
-				entity->AddComponent<CAnimation>(m_game->assets().GetAnimation(animationName), true);
+				m_ai->AddComponent<CAnimation>(m_game->assets().GetAnimation(animationName), true);
 
-				CSteeringAI& aiSteering = entity->AddComponent<CSteeringAI>();
+				CSteeringAI& aiSteering = m_ai->AddComponent<CSteeringAI>();
 				aiSteering.EntityID = m_target->id();
 				aiSteering.MaxSpeed = 2.0f;
 				aiSteering.MaxAcceleration = 0.1f;
@@ -81,10 +83,17 @@ SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPat
 			}
 			else if (label == "TextAlgorithmType")
 			{
+				m_algorithmTypeDescription = m_entityManager.AddEntity("Text");
+				Deserializer::DeserializeTransform(fin, m_algorithmTypeDescription);
+				Deserializer::DeserializeText(fin, m_algorithmTypeDescription, m_game->assets().GetFont("FontTech"));
+				m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+			}
+			else if (label == "TextAlgorithmDescription")
+			{
 				m_algorithmDescription = m_entityManager.AddEntity("Text");
 				Deserializer::DeserializeTransform(fin, m_algorithmDescription);
 				Deserializer::DeserializeText(fin, m_algorithmDescription, m_game->assets().GetFont("FontTech"));
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+				m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse)");
 			}
 			else if (label == "Text")
 			{
@@ -93,7 +102,6 @@ SceneSteering::SceneSteering(GameEngine* gameEngine, const std::string& levelPat
 				Deserializer::DeserializeText(fin, entity, m_game->assets().GetFont("FontTech"));
 			}
 		}
-
 	}
 }
 
@@ -144,6 +152,7 @@ void SceneSteering::Update()
 	}
 	}
 
+	SGui();
 	SRenderer();
 
 	m_currentFrame++;
@@ -160,107 +169,7 @@ void SceneSteering::SDoAction(const Action& action)
 		}
 		else if (action.Name() == "SWITCH_ALGORITHM")
 		{
-			ESteeringAlgorithmType oldAlgorithmType = m_algorithmType;
-			// Exit actions
-			switch (m_algorithmType)
-			{
-			case ESteeringAlgorithmType::Seek:
-			{
-				break;
-			}
-
-			case ESteeringAlgorithmType::Flee:
-			{
-				break;
-			}
-
-			case ESteeringAlgorithmType::Arrive:
-			{
-				break;
-			}
-
-			case ESteeringAlgorithmType::Wander:
-			{
-				break;
-			}
-
-			case ESteeringAlgorithmType::Pursue:
-			{
-				break;
-			}
-
-			case ESteeringAlgorithmType::Evade:
-			{
-				break;
-			}
-
-			case ESteeringAlgorithmType::PathFollowing:
-			{
-				for (auto& waypoint : m_entityManager.GetEntities("Waypoint"))
-				{
-					waypoint->destroy();
-				}
-				for (auto& e : m_entityManager.GetEntities())
-				{
-					if (!e->HasComponent<CSteeringAI>()) continue;
-
-					auto& steeringAI = e->GetComponent<CSteeringAI>();
-					steeringAI.CurrentParam = 0.0f;
-				}
-				m_currentPath.Clear();
-				m_followPath = false;
-
-				break;
-			}
-			}
-
-			m_algorithmType = (ESteeringAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)ESteeringAlgorithmType::Max));
-
-			// Enter actions
-			switch (m_algorithmType)
-			{
-			case ESteeringAlgorithmType::Seek:
-			{
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
-				break;
-			}
-
-			case ESteeringAlgorithmType::Flee:
-			{
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
-				break;
-			}
-
-			case ESteeringAlgorithmType::Arrive:
-			{
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
-				break;
-			}
-
-			case ESteeringAlgorithmType::Wander:
-			{
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
-				break;
-			}
-
-			case ESteeringAlgorithmType::Pursue:
-			{
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Pursue");
-				break;
-			}
-
-			case ESteeringAlgorithmType::Evade:
-			{
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Evade");
-				break;
-			}
-			case ESteeringAlgorithmType::PathFollowing:
-			{
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: PathFollowing");
-				break;
-
-			}
-			}
+			ChangeBehaviour((ESteeringAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)ESteeringAlgorithmType::Max)));
 		}
 		else if (action.Name() == "TOGGLE_GIZMOS")
 		{
@@ -313,6 +222,64 @@ void SceneSteering::SDoAction(const Action& action)
 	{
 
 	}
+}
+
+void SceneSteering::SGui()
+{
+	// update imgui for this frame with the time the last frame took
+	ImGui::SFML::Update(m_game->window(), m_deltaClock.restart());
+
+	// DEMO
+	//ImGui::ShowDemoWindow();
+
+	// GUI
+	ImGui::SetNextWindowSize(ImVec2(300.0f, 320.0f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(ImVec2(60.0f, 0.0f), ImGuiCond_Appearing, ImVec2(0.0f, 0.0f));
+
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration;
+	ImGui::Begin("Steering Behaviours", nullptr, windowFlags);
+
+	ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_None;
+	if (ImGui::BeginTabBar("Tab", tabFlags))
+	{
+		if (ImGui::BeginTabItem("Behaviour"))
+		{
+			const char* behaviours[] = { "Seek", "Flee", "Arrive", "Wander", "Pursue", "Evade", "Path following" };
+			static int currentBehaviour = (uint8_t)m_algorithmType;
+			currentBehaviour = (uint8_t)m_algorithmType;
+			ImGui::ListBox("", &currentBehaviour, behaviours, IM_ARRAYSIZE(behaviours), 7);
+
+			if (currentBehaviour != (uint8_t)m_algorithmType)
+			{
+				ChangeBehaviour((ESteeringAlgorithmType)currentBehaviour);
+			}
+
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("AISteeringParameters"))
+		{
+			CSteeringAI& aiSteering = m_ai->GetComponent<CSteeringAI>();
+			ImGui::PushItemWidth(-240.0f);
+			ImGui::InputFloat("Max Speed", &aiSteering.MaxSpeed, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Acceleration", &aiSteering.MaxAcceleration, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Angular Speed", &aiSteering.MaxAngularSpeed, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Angular Acceleration", &aiSteering.MaxAngularAcceleration, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Distance Slow Radius", &aiSteering.DistanceSlowRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Distance Target Radius", &aiSteering.DistanceTargetRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Orientation Slow Radius", &aiSteering.OrientationSlowRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Orientation Target radius", &aiSteering.OrientationTargetRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Wander Offset", &aiSteering.WanderOffset, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Wander Radius", &aiSteering.WanderRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Wander Rate", &aiSteering.WanderRate, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Prediction Time", &aiSteering.MaxPreditionTime, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Path Offset", &aiSteering.PathOffset, 0.01f, 1.0f, "%.3f");
+
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+
+	ImGui::End();
 }
 
 void SceneSteering::SRenderer()
@@ -517,6 +484,19 @@ void SceneSteering::SRenderer()
 						else if (!m_currentPath.Looped && targetParam > m_currentPath.Length) targetParam = m_currentPath.Length;
 
 						DrawCircle(m_currentPath.GetPosition(targetParam), 7.0f, 10, Color(1.0f, 0.0f, 0.0f), Color(1.0f, 0.0f, 0.0f), 1.0f);
+
+						if (!m_currentPath.Looped)
+						{
+							sf::CircleShape slowRadiusShape(steeringAI.DistanceSlowRadius, 40);
+							slowRadiusShape.setFillColor(sf::Color::Transparent);
+							slowRadiusShape.setOutlineColor(sf::Color::Green);
+							slowRadiusShape.setOutlineThickness(1.0f);
+							slowRadiusShape.setOrigin(steeringAI.DistanceSlowRadius, steeringAI.DistanceSlowRadius);
+							Vec2 lastWaypoint = m_currentPath.Waypoints[m_currentPath.Waypoints.size() - 1];
+							slowRadiusShape.setPosition(lastWaypoint.x, lastWaypoint.y);
+							m_game->window().draw(slowRadiusShape);
+						}
+
 						break;
 					}
 					}
@@ -539,6 +519,8 @@ void SceneSteering::SRenderer()
 			DrawLine(m_currentPath.Waypoints.at(m_currentPath.Waypoints.size() - 1), m_currentPath.Waypoints.at(0), Color(0.8f, 0.2f, 0.8f));
 		}
 	}
+
+	ImGui::SFML::Render(m_game->window()); // draw the ui last so it's on top
 
 	m_game->window().display();
 }
@@ -709,6 +691,117 @@ void SceneSteering::SPathFollowing()
 
 void SceneSteering::OnEnd()
 {
+}
+
+void SceneSteering::ChangeBehaviour(ESteeringAlgorithmType newAlgorithm)
+{
+	// Exit actions
+	switch (m_algorithmType)
+	{
+	case ESteeringAlgorithmType::Seek:
+	{
+		break;
+	}
+
+	case ESteeringAlgorithmType::Flee:
+	{
+		break;
+	}
+
+	case ESteeringAlgorithmType::Arrive:
+	{
+		break;
+	}
+
+	case ESteeringAlgorithmType::Wander:
+	{
+		break;
+	}
+
+	case ESteeringAlgorithmType::Pursue:
+	{
+		break;
+	}
+
+	case ESteeringAlgorithmType::Evade:
+	{
+		break;
+	}
+
+	case ESteeringAlgorithmType::PathFollowing:
+	{
+		for (auto& waypoint : m_entityManager.GetEntities("Waypoint"))
+		{
+			waypoint->destroy();
+		}
+		for (auto& e : m_entityManager.GetEntities())
+		{
+			if (!e->HasComponent<CSteeringAI>()) continue;
+
+			auto& steeringAI = e->GetComponent<CSteeringAI>();
+			steeringAI.CurrentParam = 0.0f;
+		}
+		m_currentPath.Clear();
+		m_followPath = false;
+
+		break;
+	}
+	}
+
+	// Enter actions
+	switch (newAlgorithm)
+	{
+	case ESteeringAlgorithmType::Seek:
+	{
+		m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+		m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse)");
+		break;
+	}
+
+	case ESteeringAlgorithmType::Flee:
+	{
+		m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
+		m_algorithmDescription->GetComponent<CText>().text.setString("Flee from target (mouse)");
+		break;
+	}
+
+	case ESteeringAlgorithmType::Arrive:
+	{
+		m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
+		m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse) and\nstart to slow down when it is near enough");
+		break;
+	}
+
+	case ESteeringAlgorithmType::Wander:
+	{
+		m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
+		m_algorithmDescription->GetComponent<CText>().text.setString("Wander randomly");
+		break;
+	}
+
+	case ESteeringAlgorithmType::Pursue:
+	{
+		m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Pursue");
+		m_algorithmDescription->GetComponent<CText>().text.setString("Move towards the predicted position of it target (mouse)");
+		break;
+	}
+
+	case ESteeringAlgorithmType::Evade:
+	{
+		m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Evade");
+		m_algorithmDescription->GetComponent<CText>().text.setString("Flee from the predicted position of it target (mouse)");
+		break;
+	}
+	case ESteeringAlgorithmType::PathFollowing:
+	{
+		m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: PathFollowing");
+		m_algorithmDescription->GetComponent<CText>().text.setString("Follow a defined path\nPress Q for placing a waypoint\nPress W for activate the behaviour\nPress E to erease the path\nPress R to make the path looped");
+		break;
+
+	}
+	}
+
+	m_algorithmType = newAlgorithm;
 }
 
 void SceneSteering::SpawnWaypoint(const Vec2& position)

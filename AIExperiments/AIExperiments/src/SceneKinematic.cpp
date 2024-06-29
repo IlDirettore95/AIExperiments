@@ -11,6 +11,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "helpers/Deserializer.h"
+#include <imgui-SFML.h>
+#include <imgui.h>
 
 SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelPath)
 	: Scene(gameEngine)
@@ -76,10 +78,17 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 			}
 			else if (label == "TextAlgorithmType")
 			{
+				m_algorithmTypeDescription = m_entityManager.AddEntity("Text");
+				Deserializer::DeserializeTransform(fin, m_algorithmTypeDescription);
+				Deserializer::DeserializeText(fin, m_algorithmTypeDescription, m_game->assets().GetFont("FontTech"));
+				m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+			}
+			else if (label == "TextAlgorithmDescription")
+			{
 				m_algorithmDescription = m_entityManager.AddEntity("Text");
 				Deserializer::DeserializeTransform(fin, m_algorithmDescription);
 				Deserializer::DeserializeText(fin, m_algorithmDescription, m_game->assets().GetFont("FontTech"));
-				m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+				m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse)");
 			}
 			else if (label == "Text")
 			{
@@ -125,6 +134,7 @@ void SceneKinematic::Update()
 		}
 	}
 
+	SGui();
 	SRenderer();
 
 	m_currentFrame++;
@@ -146,25 +156,29 @@ void SceneKinematic::SDoAction(const Action& action)
 			{
 				case KinematicAlgorithmType::Seek:
 				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
+					m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse)");
 					break;
 				}
 
 				case KinematicAlgorithmType::Flee:
 				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
+					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
+					m_algorithmDescription->GetComponent<CText>().text.setString("Flee from target (mouse)");
 					break;
 				}
 
 				case KinematicAlgorithmType::Arrive:
 				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
+					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
+					m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse) and\nstop when it it near enough");
 					break;
 				}
 
 				case KinematicAlgorithmType::Wander:
 				{
-					m_algorithmDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
+					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
+					m_algorithmDescription->GetComponent<CText>().text.setString("Wander randomly");
 					break;
 				}
 			}
@@ -178,6 +192,15 @@ void SceneKinematic::SDoAction(const Action& action)
 	{
 
 	}
+}
+
+void SceneKinematic::SGui()
+{
+	// update imgui for this frame with the time the last frame took
+	ImGui::SFML::Update(m_game->window(), m_deltaClock.restart());
+
+	// DEMO
+	ImGui::ShowDemoWindow();
 }
 
 void SceneKinematic::SRenderer()
@@ -293,6 +316,9 @@ void SceneKinematic::SRenderer()
 		text.setPosition(transform.Static.Position.x, transform.Static.Position.y);
 		m_game->window().draw(text);
 	}
+
+	ImGui::SFML::Render(m_game->window()); // draw the ui last so it's on top
+
 
 	m_game->window().display();
 }

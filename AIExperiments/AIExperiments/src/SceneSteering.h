@@ -22,6 +22,7 @@ public:
 	SceneSteering(GameEngine* gameEngine, const std::string& levelPath);
 	void Update();
 	void SDoAction(const Action& action);
+	void SGui();
 	void SRenderer();
 
 	void STargetMovement();
@@ -37,15 +38,19 @@ protected:
 	void OnEnd();
 
 private:
+	void ChangeBehaviour(ESteeringAlgorithmType newAlgorithm);
 	void SpawnWaypoint(const Vec2& position);
 	Vec2 GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity);
 
 private:
 	const Vec2 m_gridSize = { 32, 32 };
+	std::shared_ptr<Entity> m_ai = nullptr;
 	std::shared_ptr<Entity> m_target = nullptr;
 	Path m_currentPath;
+	std::shared_ptr<Entity> m_algorithmTypeDescription = nullptr;
 	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
 	ESteeringAlgorithmType m_algorithmType = ESteeringAlgorithmType::Seek;
 	bool m_drawGizmos = false;
 	bool m_followPath = false;
+	sf::Clock m_deltaClock;
 };

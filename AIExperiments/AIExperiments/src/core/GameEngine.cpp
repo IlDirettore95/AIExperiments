@@ -1,6 +1,8 @@
 #include "GameEngine.h"
 #include "../SceneMainMenu.h"
 #include <filesystem>
+#include <imgui-SFML.h>
+#include <imgui.h>
 
 void GameEngine::init()
 {
@@ -8,6 +10,11 @@ void GameEngine::init()
 	m_window.create(sf::VideoMode(1280, 768), "AIExperiments!");
 	m_window.setFramerateLimit(60);
 	m_window.setKeyRepeatEnabled(false);
+
+	// ImGUI Init
+	ImGui::SFML::Init(m_window);
+	// Scale the ImGui by a given factor. Does not affect text size
+	ImGui::GetStyle().ScaleAllSizes(1.0f);
 
 	std::string firstScenePath = (std::filesystem::current_path() / "resources" / "main_menu_scenedata.txt").string();
 	changeScene("MAIN_MENU", std::make_shared<SceneMainMenu>(this, firstScenePath));
@@ -64,6 +71,9 @@ void GameEngine::sUserInput()
 			// look up the action and send the action to the scene
 			currentScene()->SDoAction(Action(currentScene()->GetActionMap().at(event.key.code), actionType));
 		}
+
+		// Process event for ImGui
+		ImGui::SFML::ProcessEvent(m_window, event);
 	}
 }
 
