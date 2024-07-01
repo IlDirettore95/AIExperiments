@@ -7,12 +7,13 @@
 void GameEngine::init()
 {
 	m_assets.LoadFromFile();
-	m_window.create(sf::VideoMode(1280, 768), "AIExperiments!");
+	m_window.create(sf::VideoMode(1280, 720), "AIExperiments!");
 	m_window.setFramerateLimit(60);
 	m_window.setKeyRepeatEnabled(false);
 
 	// ImGUI Init
 	ImGui::SFML::Init(m_window);
+
 	// Scale the ImGui by a given factor. Does not affect text size
 	ImGui::GetStyle().ScaleAllSizes(1.0f);
 

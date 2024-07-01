@@ -3,7 +3,7 @@
 #include "core/Scene.h"
 #include <math.h>
 
-enum class KinematicAlgorithmType
+enum class EKinematicAlgorithmType
 {
 	Seek,
 	Flee,
@@ -31,14 +31,16 @@ protected:
 	void OnEnd();
 
 private:
+	void ChangeBehaviour(EKinematicAlgorithmType newAlgorithm);
 	Vec2 GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity);
 
 private:
 	const Vec2 m_gridSize = { 32, 32 };
+	std::shared_ptr<Entity> m_ai = nullptr;
 	std::shared_ptr<Entity> m_target = nullptr;
-	std::shared_ptr<Entity> m_algorithmTypeDescription = nullptr;
-	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
-	KinematicAlgorithmType m_algorithmType = KinematicAlgorithmType::Seek;
+	std::string m_algorithmTypeDescription;
+	std::string m_algorithmDescription;
+	EKinematicAlgorithmType m_algorithmType = EKinematicAlgorithmType::Seek;
 	bool m_drawGizmos = false;
 	sf::Clock m_deltaClock;
 };

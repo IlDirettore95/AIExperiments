@@ -302,7 +302,20 @@ namespace SteeringMovementsAlgorithms
 
 	SteeringOutput PathFollowing(const StaticData& characterStaticData, const DynamicData& characterDynamicData, CSteeringAI& characterSteering, const Path& path)
 	{
-		if (path.Waypoints.size() <= 1) return SteeringOutput();
+		if (path.Waypoints.size() <= 0) return SteeringOutput();
+		if (path.Waypoints.size() <= 1)
+		{
+			StaticData targetData;
+			targetData.Position = path.Waypoints[0];
+			if (!path.Looped)
+			{
+				return Arrive(characterStaticData, characterDynamicData, targetData, characterSteering);
+			}
+			else
+			{
+				return Seek(characterStaticData, targetData, characterSteering);
+			}
+		}
 
 		characterSteering.CurrentParam = path.GetParameter(characterStaticData.Position, characterSteering.CurrentParam);
 

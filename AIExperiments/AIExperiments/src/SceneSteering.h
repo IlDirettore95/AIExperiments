@@ -47,8 +47,8 @@ private:
 	std::shared_ptr<Entity> m_ai = nullptr;
 	std::shared_ptr<Entity> m_target = nullptr;
 	Path m_currentPath;
-	std::shared_ptr<Entity> m_algorithmTypeDescription = nullptr;
-	std::shared_ptr<Entity> m_algorithmDescription = nullptr;
+	std::string m_algorithmTypeDescription;
+	std::string m_algorithmDescription;
 	ESteeringAlgorithmType m_algorithmType = ESteeringAlgorithmType::Seek;
 	bool m_drawGizmos = false;
 	bool m_followPath = false;

@@ -27,6 +27,9 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 		RegisterAction(sf::Keyboard::G, "TOGGLE_GIZMOS");
 	}
 
+	// Init
+	ChangeBehaviour(EKinematicAlgorithmType::Seek);
+
 	// Load Level
 	{
 		// reset the entity manager every time we load a level
@@ -39,14 +42,15 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 		{
 			if (label == "AICharacter")
 			{
-				auto entity = m_entityManager.AddEntity("AICharacter");
-				Deserializer::DeserializeTransform(fin, entity);
+				m_ai = m_entityManager.AddEntity("AICharacter");
+				Deserializer::DeserializeTransform(fin, m_ai);
 
 				std::string animationName;
 				fin >> animationName;;
 
-				entity->AddComponent<CAnimation>(m_game->assets().GetAnimation(animationName), true);
-				CSteeringAI& aiSteering = entity->AddComponent<CSteeringAI>();
+				m_ai->AddComponent<CAnimation>(m_game->assets().GetAnimation(animationName), true);
+				
+				CSteeringAI& aiSteering = m_ai->AddComponent<CSteeringAI>();
 				aiSteering.EntityID = m_target->id();
 				aiSteering.MaxSpeed = 2.0f;
 				aiSteering.MaxAcceleration = 0.0f;
@@ -76,20 +80,6 @@ SceneKinematic::SceneKinematic(GameEngine* gameEngine, const std::string& levelP
 				followMouseComponent.debugCircle.setOutlineThickness(1.0f);
 				followMouseComponent.debugCircle.setOrigin(5.0f, 5.0f);
 			}
-			else if (label == "TextAlgorithmType")
-			{
-				m_algorithmTypeDescription = m_entityManager.AddEntity("Text");
-				Deserializer::DeserializeTransform(fin, m_algorithmTypeDescription);
-				Deserializer::DeserializeText(fin, m_algorithmTypeDescription, m_game->assets().GetFont("FontTech"));
-				m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
-			}
-			else if (label == "TextAlgorithmDescription")
-			{
-				m_algorithmDescription = m_entityManager.AddEntity("Text");
-				Deserializer::DeserializeTransform(fin, m_algorithmDescription);
-				Deserializer::DeserializeText(fin, m_algorithmDescription, m_game->assets().GetFont("FontTech"));
-				m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse)");
-			}
 			else if (label == "Text")
 			{
 				auto entity = m_entityManager.AddEntity("Text");
@@ -109,29 +99,26 @@ void SceneKinematic::Update()
 
 	switch (m_algorithmType)
 	{
-		case KinematicAlgorithmType::Seek:
-		{
-			SSeek();
-			break;
-		}
-
-		case KinematicAlgorithmType::Flee:
-		{
-			SFlee();
-			break;
-		}
-
-		case KinematicAlgorithmType::Arrive:
-		{
-			SArrive();
-			break;
-		}
-
-		case KinematicAlgorithmType::Wander:
-		{
-			SWander();
-			break;
-		}
+	case EKinematicAlgorithmType::Seek:
+	{
+		SSeek();
+		break;
+	}
+	case EKinematicAlgorithmType::Flee:
+	{
+		SFlee();
+		break;
+	}
+	case EKinematicAlgorithmType::Arrive:
+	{
+		SArrive();
+		break;
+	}
+	case EKinematicAlgorithmType::Wander:
+	{
+		SWander();
+		break;
+	}
 	}
 
 	SGui();
@@ -151,37 +138,7 @@ void SceneKinematic::SDoAction(const Action& action)
 		}
 		else if (action.Name() == "SWITCH_ALGORITHM")
 		{
-			m_algorithmType = (KinematicAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)KinematicAlgorithmType::Max));
-			switch (m_algorithmType)
-			{
-				case KinematicAlgorithmType::Seek:
-				{
-					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Seek");
-					m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse)");
-					break;
-				}
-
-				case KinematicAlgorithmType::Flee:
-				{
-					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Flee");
-					m_algorithmDescription->GetComponent<CText>().text.setString("Flee from target (mouse)");
-					break;
-				}
-
-				case KinematicAlgorithmType::Arrive:
-				{
-					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Arrive");
-					m_algorithmDescription->GetComponent<CText>().text.setString("Move towards target (mouse) and\nstop when it it near enough");
-					break;
-				}
-
-				case KinematicAlgorithmType::Wander:
-				{
-					m_algorithmTypeDescription->GetComponent<CText>().text.setString("Algorithm: Wander");
-					m_algorithmDescription->GetComponent<CText>().text.setString("Wander randomly");
-					break;
-				}
-			}
+			ChangeBehaviour((EKinematicAlgorithmType)(((uint8_t)m_algorithmType + 1) % ((uint8_t)EKinematicAlgorithmType::Max)));
 		}
 		else if (action.Name() == "TOGGLE_GIZMOS")
 		{
@@ -200,7 +157,74 @@ void SceneKinematic::SGui()
 	ImGui::SFML::Update(m_game->window(), m_deltaClock.restart());
 
 	// DEMO
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
+
+	// GUI
+	ImGui::SetNextWindowSize(ImVec2(340.0f, 720.0f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Appearing, ImVec2(0.0f, 0.0f));
+
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+	ImGui::Begin("Steering Behaviours", nullptr, windowFlags);
+
+	ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_None;
+	if (ImGui::BeginTabBar("Tab", tabFlags))
+	{
+		if (ImGui::BeginTabItem("Configs"))
+		{
+			const char* behaviours[] = { "Seek", "Flee", "Arrive", "Wander"};
+			static int currentBehaviour = (uint8_t)m_algorithmType;
+			currentBehaviour = (uint8_t)m_algorithmType;
+			ImGui::ListBox("", &currentBehaviour, behaviours, IM_ARRAYSIZE(behaviours), 4);
+
+			if (currentBehaviour != (uint8_t)m_algorithmType)
+			{
+				ChangeBehaviour((EKinematicAlgorithmType)currentBehaviour);
+			}
+
+			CSteeringAI& aiSteering = m_ai->GetComponent<CSteeringAI>();
+			ImGui::PushItemWidth(-200.0f);
+			ImGui::InputFloat("Max Speed", &aiSteering.MaxSpeed, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Acceleration", &aiSteering.MaxAcceleration, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Angular Speed", &aiSteering.MaxAngularSpeed, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Angular Acceleration", &aiSteering.MaxAngularAcceleration, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Distance Slow Radius", &aiSteering.DistanceSlowRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Distance Target Radius", &aiSteering.DistanceTargetRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Orientation Slow Radius", &aiSteering.OrientationSlowRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Orientation Target radius", &aiSteering.OrientationTargetRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Wander Offset", &aiSteering.WanderOffset, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Wander Radius", &aiSteering.WanderRadius, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Wander Rate", &aiSteering.WanderRate, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Max Prediction Time", &aiSteering.MaxPreditionTime, 0.01f, 1.0f, "%.3f");
+			ImGui::InputFloat("Path Offset", &aiSteering.PathOffset, 0.01f, 1.0f, "%.3f");
+
+			ImGui::SeparatorText("Description");
+
+			ImGui::TextWrapped(
+				"%s"
+				"\n\n%s", m_algorithmTypeDescription.c_str(), m_algorithmDescription.c_str());
+
+			ImGui::SeparatorText("Other controls");
+			ImGui::TextWrapped(
+				"\nPress G to toggle gizmos"
+				"\nPress Space to change algorithm"
+				"\nPress Esc to go back to MainMenu");
+
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	ImGui::End();
+
+	// BEHAVIOUR GUI
+	ImGui::SetNextWindowSize(ImVec2(160.0f, 20.0f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowPos(ImVec2(1280.0f, 0.0f), ImGuiCond_Appearing, ImVec2(1.0f, 0.0f));
+
+	ImGuiWindowFlags textWindowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground;
+	ImGui::Begin("Behaviour Text", nullptr, textWindowFlags);
+
+	ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.0f, 1.0f), m_algorithmTypeDescription.c_str());
+
+	ImGui::End();
 }
 
 void SceneKinematic::SRenderer()
@@ -265,19 +289,19 @@ void SceneKinematic::SRenderer()
 
 					switch (m_algorithmType)
 					{
-						case KinematicAlgorithmType::Seek:
+						case EKinematicAlgorithmType::Seek:
 						{
 							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
 							break;
 						}
 
-						case KinematicAlgorithmType::Flee:
+						case EKinematicAlgorithmType::Flee:
 						{
 							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
 							break;
 						}
 
-						case KinematicAlgorithmType::Arrive:
+						case EKinematicAlgorithmType::Arrive:
 						{
 							DrawLine(transform.Static.Position, targetTransform.Static.Position, Color(1.0f, 0.0f, 0.0f));
 
@@ -292,7 +316,7 @@ void SceneKinematic::SRenderer()
 							break;
 						}
 
-						case KinematicAlgorithmType::Wander:
+						case EKinematicAlgorithmType::Wander:
 						{
 							break;
 						}
@@ -410,11 +434,66 @@ void SceneKinematic::SWander()
 
 		KinematicMovementsAlgorithms::SteeringOutput steering = KinematicMovementsAlgorithms::Wander(transform.Static, target.MaxSpeed, 0.07f);
 		KinematicMovementsAlgorithms::Update(transform.Static, steering);
+
+		if (transform.Static.Position.x > m_game->window().getSize().x)
+		{
+			transform.Static.Position.x = m_game->window().getSize().x - transform.Static.Position.x;
+		}
+		else if (transform.Static.Position.x < 0.0f)
+		{
+			transform.Static.Position.x = m_game->window().getSize().x + transform.Static.Position.x;
+		}
+
+		if (transform.Static.Position.y > m_game->window().getSize().y)
+		{
+			transform.Static.Position.y = m_game->window().getSize().y - transform.Static.Position.y;
+		}
+		else if (transform.Static.Position.y < 0.0f)
+		{
+			transform.Static.Position.y = m_game->window().getSize().y + transform.Static.Position.y;
+		}
 	}
 }
 
 void SceneKinematic::OnEnd()
 {
+}
+
+void SceneKinematic::ChangeBehaviour(EKinematicAlgorithmType newAlgorithm)
+{
+	// Enter actions
+	switch (newAlgorithm)
+	{
+	case EKinematicAlgorithmType::Seek:
+	{
+		m_algorithmTypeDescription = "Algorithm: Seek";
+		m_algorithmDescription = "Move towards target (mouse)";
+		break;
+	}
+
+	case EKinematicAlgorithmType::Flee:
+	{
+		m_algorithmTypeDescription = "Algorithm: Flee";
+		m_algorithmDescription = "Flee from target (mouse)";
+		break;
+	}
+
+	case EKinematicAlgorithmType::Arrive:
+	{
+		m_algorithmTypeDescription = "Algorithm: Arrive";
+		m_algorithmDescription = "Move towards target (mouse) and\nstop when it it near enough";
+		break;
+	}
+
+	case EKinematicAlgorithmType::Wander:
+	{
+		m_algorithmTypeDescription = "Algorithm: Wander";
+		m_algorithmDescription = "Wander randomly";
+		break;
+	}
+	}
+
+	m_algorithmType = newAlgorithm;
 }
 
 Vec2 SceneKinematic::GridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity)

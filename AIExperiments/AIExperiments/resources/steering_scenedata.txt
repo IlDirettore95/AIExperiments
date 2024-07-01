@@ -1,8 +1,3 @@
 MovingTarget	
 AICharacter					300		300		AnimAICharacter			
 Text						640		100		STEERING-ALGORITHMS					36	Center	255 255 255
-Text						1220	240		Press-G-(toggle-debug-draws)		16	Right	255 255 255
-Text						1220	270		Press-Esc-(go-to-MainMenu)			16	Right	255 255 255
-Text						1220	300		Press-Space-(switch-algorithm)		16	Right	255 255 255
-TextAlgorithmType			60		360		AlgorithmType						22	Left	100 200 0
-TextAlgorithmDescription	60		390		Algorithm-Description				16	Left	255	255	255
