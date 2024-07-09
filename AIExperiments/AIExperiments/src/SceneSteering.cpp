@@ -278,7 +278,7 @@ void SceneSteering::SGui()
 	ImGui::End();
 
 	// BEHAVIOUR GUI
-	ImGui::SetNextWindowSize(ImVec2(160.0f, 20.0f), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(ImVec2(200.0f, 20.0f), ImGuiCond_Appearing);
 	ImGui::SetNextWindowPos(ImVec2(1280.0f, 0.0f), ImGuiCond_Appearing, ImVec2(1.0f, 0.0f));
 
 	ImGuiWindowFlags textWindowFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground;
